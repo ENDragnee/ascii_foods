@@ -13,12 +13,13 @@ model User {
   name          String
   email         String
   emailVerified Boolean   @default(false)
-  role      Role    @default(USER)
+  role          Role      @default(USER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @default(now()) @updatedAt
   sessions      Session[]
   accounts      Account[]
   orders        Orders[]
+  favouriteFoods FavouriteFoods[]
 
   @@unique([email])
   @@map("user")
@@ -69,7 +70,6 @@ model Verification {
   @@map("verification")
 }
 
-
 model Foods {
   id        String       @id @default(cuid())
   name      String
@@ -79,6 +79,18 @@ model Foods {
   createdAt DateTime     @default(now())
 
   orders Orders[]
+  favouriteFoods FavouriteFoods[]
+}
+
+model FavouriteFoods {
+  id      String @id @default(cuid())
+  userId  String
+  foodId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  food    Foods  @relation(fields: [foodId], references: [id], onDelete: Cascade)
+
+  // This ensures a user can only favorite a specific food once.
+  @@unique([userId, foodId])
 }
 
 model Orders {
@@ -92,8 +104,8 @@ model Orders {
   paymentStatus PaymentStatus @default(NOTPAID)
   createdAt     DateTime      @default(now())
 
-  user User  @relation(fields: [userId], references: [id])
-  food Foods @relation(fields: [foodId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  food Foods @relation(fields: [foodId], references: [id], onDelete: Restrict)
 }
 
 enum Role {
