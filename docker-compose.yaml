@@ -1,0 +1,39 @@
+name: ascii_foods
+
+services:
+  postgres:
+    image: postgres:17.6
+    container_name: vdi_admin_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: foods_admin
+      POSTGRES_PASSWORD: $(POSTGRES_PASSWORD)
+      POSTGRES_DB: ascii_foods
+    ports:
+      - "5432:5432"
+    volumes:
+      - ascii_foods_postgres:/var/lib/postgresql/data
+    networks:
+      - ascii_foods_network
+
+  nextjs_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ascii_foods
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    ports:
+      - "3000:3000"
+    networks:
+      - ascii_foods_network
+    depends_on:
+      - postgres
+
+volumes:
+  ascii_foods_postgres:
+
+networks:
+  ascii_foods_network:
+    driver: bridge
