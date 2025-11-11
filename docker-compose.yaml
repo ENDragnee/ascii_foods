@@ -3,7 +3,7 @@ name: ascii_foods
 services:
   postgres:
     image: postgres:17.6
-    container_name: vdi_admin_postgres
+    container_name: ascii_foods_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: foods_admin
