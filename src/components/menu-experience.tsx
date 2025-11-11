@@ -26,7 +26,7 @@ const CATEGORIES = [
   "specialty",
   "sides",
 ];
-const MOCK_FAVORITES = ["cjsxu245f0000u0qw9a7b8c6d", "cjsxu245f0001u0qw9a7b8c6e"];
+const MOCK_FAVORITES = ["cmhv21uya0000rav575vl7dlg", "cmhv21uya0002rav5wram8ibg"];
 
 // --- API FETCHER ---
 async function fetchMenus(): Promise<MenuItem[]> {
