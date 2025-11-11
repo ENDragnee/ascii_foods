@@ -5,14 +5,6 @@ import { useState, useEffect } from "react"
 // An array of dishes to be displayed in the hero section.
 const DISHES = ["እንቁላል ፍርፍር", "ፓስታ በአትክልት", "ሩዝ በአትክልት", "ሶያ", "ተጋቢኖ", "የቤቱ ስፔሻል", "ጨጨብሳ", "ስፔሻል ሳንዱች"]
 
-/**
- * A hero component for a restaurant website with an animated background,
- * a typing effect for dish names, and a call-to-action button.
- *
- * @param {{ onEnter: () => void }} props - Component props.
- * @param {() => void} props.onEnter - Function to be called when the enter button is clicked.
- * @returns {JSX.Element} The rendered hero component.
- */
 export default function RestaurantHero({ onEnter }: { onEnter: () => void }) {
   const [displayText, setDisplayText] = useState("")
   const [dishIndex, setDishIndex] = useState(0)
@@ -87,7 +79,7 @@ export default function RestaurantHero({ onEnter }: { onEnter: () => void }) {
           <span className="relative z-10"> ጀምር</span>
           <div
             className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"
-           />
+          />
         </button>
 
         <div className="mt-16 flex justify-center gap-4">
