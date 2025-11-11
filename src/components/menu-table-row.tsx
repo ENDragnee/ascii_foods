@@ -1,12 +1,17 @@
-"use client"
+"use client";
+
+import Image from "next/image";
+
+// --- TYPE DEFINITIONS ---
+interface MenuItem {
+  id: string;
+  name: string;
+  price: number;
+  imageUrl?: string | null;
+}
 
 interface MenuTableRowProps {
-  item: {
-    id: number;
-    name: string;
-    price: number;
-    emoji: string;
-  };
+  item: MenuItem;
   isInCart: boolean;
   quantity: number;
   onAdd: () => void;
@@ -14,53 +19,74 @@ interface MenuTableRowProps {
 }
 
 /**
- * A compact row component for displaying a menu item in a table/list view.
+ * A row component to display a single menu item in a list/table format.
  */
 export function MenuTableRow({ item, isInCart, quantity, onAdd, onRemove }: MenuTableRowProps) {
   return (
     <div
-      className="flex items-center p-4 bg-white rounded-2xl shadow-sm border-2 border-transparent hover:border-[#ffd700]/50 transition-all"
+      className="flex items-center justify-between p-3 rounded-xl transition-all duration-300"
+      style={{
+        background: "white",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+        border: `2px solid ${isInCart ? "rgba(219, 16, 32, 0.5)" : "transparent"}`
+      }}
     >
-      {/* Emoji and Name */}
-      <div className="flex items-center gap-4 flex-1">
-        <span className="text-4xl">{item.emoji}</span>
+      {/* Left Section: Image and Info */}
+      <div className="flex items-center gap-4">
+        <div className="relative h-16 w-16 flex-shrink-0">
+          {item.imageUrl ? (
+            <Image
+              src={item.imageUrl}
+              alt={item.name}
+              layout="fill"
+              objectFit="cover"
+              className="rounded-md"
+            />
+          ) : (
+            <div className="h-full w-full bg-gray-100 rounded-md flex items-center justify-center">
+              <span className="text-3xl">🍽️</span>
+            </div>
+          )}
+        </div>
         <div>
-          <h4 className="font-bold text-lg" style={{ color: "#27742d" }}>{item.name}</h4>
-          <p className="font-semibold text-md" style={{ color: "#db1020" }}>
+          <h3 className="font-bold text-lg" style={{ color: "#27742d" }}>
+            {item.name}
+          </h3>
+          <p className="font-semibold text-base" style={{ color: "#db1020" }}>
             {item.price} ብር
           </p>
         </div>
       </div>
 
-      {/* Cart Controls */}
-      <div className="flex items-center gap-4">
+      {/* Right Section: Cart Controls */}
+      <div className="flex-shrink-0">
         {!isInCart ? (
           <button
             onClick={onAdd}
-            className="px-6 py-2 rounded-lg font-bold text-white transition-all transform hover:scale-105"
+            className="py-2 px-5 rounded-lg font-bold text-sm text-white transition-all transform hover:scale-105"
             style={{
-              background: "linear-gradient(135deg, #ffd700 0%, #db1020 100%)",
+              background: "linear-gradient(135deg, #27742d 0%, #1f5c23 100%)",
             }}
           >
             Add
           </button>
         ) : (
           <div
-            className="flex items-center justify-between p-1 rounded-lg"
-            style={{ background: "rgba(219, 16, 32, 0.1)", border: "2px solid #db1020" }}
+            className="flex items-center justify-between p-1 rounded-lg gap-3"
+            style={{ background: "rgba(39, 116, 45, 0.05)" }}
           >
-            <button onClick={onRemove} className="px-3 py-1 text-2xl font-bold rounded-md transition-colors hover:bg-red-200/50" style={{ color: "#db1020" }}>
+            <button onClick={onRemove} className="px-2 text-xl font-bold rounded-md transition-colors" style={{ color: "#db1020" }}>
               −
             </button>
-            <span className="font-bold text-lg w-8 text-center" style={{ color: "#db1020" }}>
+            <span className="font-bold text-lg" style={{ color: "#27742d" }}>
               {quantity}
             </span>
-            <button onClick={onAdd} className="px-3 py-1 text-2xl font-bold rounded-md transition-colors hover:bg-green-200/50" style={{ color: "#27742d" }}>
+            <button onClick={onAdd} className="px-2 text-xl font-bold rounded-md transition-colors" style={{ color: "#27742d" }}>
               +
             </button>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
