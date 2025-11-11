@@ -13,7 +13,7 @@ export default async function AuthPage({ searchParams }: AuthPageProps) {
   });
 
   if (session) {
-    redirect("/shop");
+    redirect("/menu");
   }
 
   const params = await searchParams;
