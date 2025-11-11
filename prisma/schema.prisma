@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -15,40 +9,40 @@ datasource db {
 }
 
 model User {
-  id        String  @id @default(cuid())
-  email     String  @unique
-  name      String?
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
   password_hash String
-  role      Role    @default(USER)
-  createdAt DateTime @default(now())
+  role          Role     @default(USER)
+  createdAt     DateTime @default(now())
 
-  orders    Orders[]
+  orders Orders[]
 }
 
 model Foods {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   name      String
   price     Float
-  category  FoodCategory  @default(NORMAL)
+  category  FoodCategory @default(NORMAL)
   imageUrl  String?
-  createdAt DateTime @default(now())
-  
-  orders    Orders[]
+  createdAt DateTime     @default(now())
+
+  orders Orders[]
 }
 
 model Orders {
-  id        String   @id @default(cuid())
-  userId    String
-  foodId    String
-  quantity  Int
-  bonoNumber  Int
-  orderStatus OrderStatus @default(PENDING)
-  totalPrice Float
+  id            String        @id @default(cuid())
+  userId        String
+  foodId        String
+  quantity      Int
+  bonoNumber    Int
+  orderStatus   OrderStatus   @default(PENDING)
+  totalPrice    Float
   paymentStatus PaymentStatus @default(NOTPAID)
-  createdAt DateTime @default(now())
+  createdAt     DateTime      @default(now())
 
-  user      User     @relation(fields: [userId], references: [id])
-  food      Foods    @relation(fields: [foodId], references: [id])
+  user User  @relation(fields: [userId], references: [id])
+  food Foods @relation(fields: [foodId], references: [id])
 }
 
 enum Role {
