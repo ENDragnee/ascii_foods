@@ -10,8 +10,12 @@ import Link from "next/link"
 export function SignInForm({
   onSubmit,
   isLoading = false,
-  handleSocial
-}: { onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>; isLoading?: boolean; handleSocial: (provider: "google" | "apple") => Promise<void> }) {
+  handleSocial,
+}: {
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
+  isLoading?: boolean
+  handleSocial: (provider: "google" | "apple") => Promise<void>
+}) {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="space-y-4">
@@ -29,7 +33,8 @@ export function SignInForm({
             autoCorrect="off"
             disabled={isLoading}
             required
-            className="border-2 focus-visible:ring-[#D4FF00] focus-visible:border-[#D4FF00]"
+            className="border-2 focus-visible:ring-0 focus-visible:border-[var(--menu-primary)]"
+            style={{ borderColor: "var(--menu-border)" }}
           />
         </div>
 
@@ -54,7 +59,8 @@ export function SignInForm({
             autoComplete="current-password"
             disabled={isLoading}
             required
-            className="border-2 focus-visible:ring-[#D4FF00] focus-visible:border-[#D4FF00]"
+            className="border-2 focus-visible:ring-0 focus-visible:border-[var(--menu-primary)]"
+            style={{ borderColor: "var(--menu-border)" }}
           />
         </div>
       </div>
@@ -62,7 +68,7 @@ export function SignInForm({
       <div className="flex items-center space-x-2">
         <Checkbox
           id="remember"
-          className="data-[state=checked]:bg-[#D4FF00] data-[state=checked]:border-[#D4FF00] data-[state=checked]:text-foreground"
+          className="data-[state=checked]:bg-[var(--menu-primary)] data-[state=checked]:border-[var(--menu-primary)]"
         />
         <label htmlFor="remember" className="text-sm text-muted-foreground">
           Remember me
@@ -71,7 +77,8 @@ export function SignInForm({
 
       <Button
         type="submit"
-        className="w-full bg-[#D4FF00] hover:bg-[#D4FF00]/90 text-foreground font-bold uppercase tracking-wider h-12"
+        className="w-full font-bold uppercase tracking-wider h-12"
+        style={{ backgroundColor: "var(--menu-primary)", color: "white" }}
         disabled={isLoading}
       >
         {isLoading ? "Signing In..." : "Sign In"}
@@ -86,26 +93,18 @@ export function SignInForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Button
-          type="button"
-          onClick={() => handleSocial("google")}
-          variant="outline"
-          disabled={isLoading}
-          className="border-2 hover:border-[#D4FF00] hover:bg-[#D4FF00]/10 bg-transparent"
-        >
-          Google
-        </Button>
-        <Button
-          type="button"
-          onClick={() => handleSocial("google")}
-          variant="outline"
-          disabled={isLoading}
-          className="border-2 hover:border-[#D4FF00] hover:bg-[#D4FF00]/10 bg-transparent"
-        >
-          Apple
-        </Button>
-      </div>
+      <Button
+        type="button"
+        onClick={() => handleSocial("google")}
+        variant="outline"
+        disabled={isLoading}
+        className="w-full border-2 hover:bg-opacity-10"
+        style={{ borderColor: "var(--menu-border)", color: "var(--menu-secondary)" }}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(219, 16, 32, 0.05)")}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+      >
+        Google
+      </Button>
     </form>
   )
 }
