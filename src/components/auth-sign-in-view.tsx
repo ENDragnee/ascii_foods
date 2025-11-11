@@ -9,17 +9,18 @@ interface SignInViewProps {
   onSubmit: (e: React.FormEvent) => Promise<void>
   isLoading: boolean
   handleSocial: (provider: "google" | "apple") => Promise<void>
+  error?: string
 }
 
-export function SignInView({ onSubmit, isLoading, handleSocial }: SignInViewProps) {
+export function SignInView({ onSubmit, isLoading, handleSocial, error = "" }: SignInViewProps) {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Image/Brand */}
-      <div className="hidden lg:flex flex-1 bg-[var(--menu-background)] relative overflow-hidden">
+      <div className="hidden lg:flex flex-1 bg-menu-background relative overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative">
-            <div className="absolute -top-20 -left-20 w-64 h-64 bg-[var(--menu-primary)] opacity-10" />
-            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[var(--menu-primary)] opacity-10" />
+            <div className="absolute -top-20 -left-20 w-64 h-64 bg-menu-primary opacity-10" />
+            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-menu-primary opacity-10" />
             <div className="relative z-10 text-center space-y-6 p-12">
               <h2 className="text-6xl font-bold tracking-[0.3em] uppercase" style={{ color: "var(--menu-secondary)" }}>
                 Welcome Back
@@ -53,7 +54,7 @@ export function SignInView({ onSubmit, isLoading, handleSocial }: SignInViewProp
                   className="text-2xl font-bold tracking-[0.2em] uppercase"
                   style={{ color: "var(--menu-secondary)" }}
                 >
-                 yellow
+                  YELLOW
                 </span>
               </div>
             </Link>
@@ -63,7 +64,7 @@ export function SignInView({ onSubmit, isLoading, handleSocial }: SignInViewProp
             <p className="text-muted-foreground">Sign in to your account</p>
           </div>
 
-          <SignInForm onSubmit={onSubmit} isLoading={isLoading} handleSocial={handleSocial} />
+          <SignInForm onSubmit={onSubmit} isLoading={isLoading} handleSocial={handleSocial} error={error} />
 
           <div className="mt-8 text-center text-sm">
             <span className="text-muted-foreground">Don't have an account? </span>

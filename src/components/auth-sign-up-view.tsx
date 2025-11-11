@@ -9,9 +9,10 @@ interface SignUpViewProps {
   onSubmit: (e: React.FormEvent) => Promise<void>
   isLoading: boolean
   handleSocial: (provider: "google" | "apple") => Promise<void>
+  error?: string
 }
 
-export function SignUpView({ onSubmit, isLoading, handleSocial }: SignUpViewProps) {
+export function SignUpView({ onSubmit, isLoading, handleSocial, error = "" }: SignUpViewProps) {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Form */}
@@ -37,10 +38,10 @@ export function SignUpView({ onSubmit, isLoading, handleSocial }: SignUpViewProp
             <h1 className="text-4xl font-bold tracking-tight mb-2" style={{ color: "var(--menu-secondary)" }}>
               Create Account
             </h1>
-            <p className="text-muted-foreground"></p>
+            <p className="text-muted-foreground">Join to order</p>
           </div>
 
-          <SignUpForm onSubmit={onSubmit} isLoading={isLoading} handleSocial={handleSocial} />
+          <SignUpForm onSubmit={onSubmit} isLoading={isLoading} handleSocial={handleSocial} error={error} />
 
           <div className="mt-8 text-center text-sm">
             <span className="text-muted-foreground">Already have an account? </span>
@@ -56,21 +57,21 @@ export function SignUpView({ onSubmit, isLoading, handleSocial }: SignUpViewProp
       </div>
 
       {/* Right side - Image/Brand */}
-      <div className="hidden lg:flex flex-1 bg-[var(--menu-background)] relative overflow-hidden">
+      <div className="hidden lg:flex flex-1 bg-menu-background relative overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative">
-            <div className="absolute -top-20 -left-20 w-64 h-64 bg-[var(--menu-primary)] opacity-10" />
-            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[var(--menu-primary)] opacity-10" />
+            <div className="absolute -top-20 -left-20 w-64 h-64 bg-menu-primary opacity-10" />
+            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-menu-primary opacity-10" />
             <div className="relative z-10 text-center space-y-6 p-12">
               <h2 className="text-6xl font-bold tracking-[0.3em] uppercase" style={{ color: "var(--menu-secondary)" }}>
-                KK Food Ordering
+                SHELL HOOD WORLD
               </h2>
               <p className="text-xl tracking-wider uppercase" style={{ color: "var(--menu-secondary)" }}>
-                Hungry? Join now and get your favorite meals delivered faster than you can say ‘I’m starving!’ 🍕
+                Complete Look Collection
               </p>
               <div className="pt-8">
                 <div className="inline-block px-8 py-4" style={{ backgroundColor: "var(--menu-primary)" }}>
-                  <span className="font-bold tracking-wider uppercase text-white">Ordering Made Easy</span>
+                  <span className="font-bold tracking-wider uppercase text-white">Organic Cotton Blend</span>
                 </div>
               </div>
             </div>
