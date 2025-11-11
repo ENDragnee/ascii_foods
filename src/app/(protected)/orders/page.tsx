@@ -1,149 +1,104 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { MenuHeader } from "@/components/menu-header"
-import { OrderTracker } from "@/components/order-tracker"
-import { Button } from "@/components/ui/button"
-import { Clock } from "lucide-react"
-import Link from "next/link"
+import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
+import { Foods, OrderStatus } from "@/generated/prisma/client"; // Import types from Prisma
+import { Loader2, AlertCircle } from "lucide-react";
 
-interface Order {
-  items: any[]
-  subtotal: number
-  tax: number
-  total: number
-  orderNumber: string
-  timestamp: string
+// Define a more complete type for our order items, including the food details
+type FullOrderItem = {
+  id: string;
+  quantity: number;
+  totalPrice: number;
+  orderStatus: OrderStatus;
+  createdAt: string;
+  bonoNumber: number;
+  food: Foods;
+};
+
+// API fetcher function for this page
+async function fetchOrders(): Promise<FullOrderItem[]> {
+  const response = await fetch('/api/orders');
+  if (!response.ok) {
+    throw new Error("Failed to fetch orders");
+  }
+  return response.json();
 }
 
+// Helper to get a color based on order status
+const getStatusColor = (status: OrderStatus) => {
+  switch (status) {
+    case 'PENDING': return 'bg-yellow-100 text-yellow-800';
+    case 'COMPLETED': return 'bg-green-100 text-green-800';
+    case 'REJECTED': return 'bg-red-100 text-red-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+};
+
 export default function OrdersPage() {
-  const [order, setOrder] = useState<Order | null>(null)
-  const [orderStatus, setOrderStatus] = useState<"confirmed" | "preparing" | "ready" | "completed">("confirmed")
+  const { data: orders, isLoading, isError } = useQuery<FullOrderItem[]>({
+    queryKey: ['orders'],
+    queryFn: fetchOrders,
+  });
 
-  useEffect(() => {
-    // Get order from localStorage
-    const savedOrder = localStorage.getItem("lastOrder")
-    if (savedOrder) {
-      const parsedOrder = JSON.parse(savedOrder)
-      setOrder(parsedOrder)
-
-      // Simulate order progress
-      const timer1 = setTimeout(() => setOrderStatus("preparing"), 2000)
-      const timer2 = setTimeout(() => setOrderStatus("ready"), 6000)
-      const timer3 = setTimeout(() => setOrderStatus("completed"), 10000)
-
-      return () => {
-        clearTimeout(timer1)
-        clearTimeout(timer2)
-        clearTimeout(timer3)
-      }
-    }
-  }, [])
-
-  if (!order) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <MenuHeader />
-        <main className="max-w-6xl mx-auto px-4 py-12">
-          <div className="flex flex-col items-center justify-center py-20 space-y-6">
-            <h2 className="text-2xl font-bold">No Active Orders</h2>
-            <p className="text-muted-foreground">You don't have any orders to track</p>
-            <Link href="/menu">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">Start Ordering</Button>
-            </Link>
-          </div>
-        </main>
+      <div className="flex justify-center items-center h-[60vh]">
+        <Loader2 className="animate-spin text-gray-500" size={48} />
       </div>
-    )
+    );
   }
 
-  const orderDate = new Date(order.timestamp)
+  if (isError) {
+    return (
+      <div className="flex flex-col justify-center items-center h-[60vh] text-red-500">
+        <AlertCircle size={48} className="mb-4" />
+        <h2 className="text-xl font-semibold">Failed to load orders.</h2>
+        <p>Please try again later.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <MenuHeader />
-
-      <main className="max-w-6xl mx-auto px-4 py-12">
-        {/* Order Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-2">Order Status</h1>
-          <p className="text-lg text-muted-foreground">Order #{order.orderNumber}</p>
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Status Tracker */}
-          <div className="lg:col-span-2">
-            <OrderTracker status={orderStatus} />
-
-            {/* Estimated Time */}
-            <div className="mt-12 bg-card rounded-xl p-6 border border-border">
-              <div className="flex items-center gap-3 mb-4">
-                <Clock className="w-6 h-6 text-primary" />
-                <h3 className="font-semibold text-lg">Estimated Ready Time</h3>
-              </div>
-              <p className="text-3xl font-bold text-primary">
-                {orderStatus === "completed" ? "Ready for pickup!" : "10-12 minutes"}
-              </p>
-              {orderStatus !== "completed" && (
-                <p className="text-muted-foreground mt-2">Your order will be ready soon. Please wait at the counter.</p>
-              )}
-            </div>
-          </div>
-
-          {/* Order Summary Card */}
-          <div className="lg:sticky lg:top-24 h-fit">
-            <div className="bg-card rounded-xl p-6 border border-border space-y-4">
-              <h2 className="text-xl font-bold">Order Summary</h2>
-
-              {/* Items */}
-              <div className="space-y-3 max-h-60 overflow-y-auto border-b border-border pb-4">
-                {order.items.map((item, idx) => (
-                  <div key={idx} className="flex justify-between text-sm">
-                    <div>
-                      <p className="font-medium">{item.name}</p>
-                      {item.size && <p className="text-xs text-muted-foreground">{item.size}</p>}
-                    </div>
-                    <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+    <div className="max-w-4xl mx-auto p-4 md:p-8">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-4">My Recent Orders</h1>
+      {orders && orders.length > 0 ? (
+        <div className="space-y-4">
+          {orders.map((order) => (
+            <div key={order.id} className="flex items-center gap-4 p-4 bg-white rounded-lg shadow-sm">
+              <div className="relative h-20 w-20 flex-shrink-0">
+                {order.food.imageUrl ? (
+                  <Image src={order.food.imageUrl} alt={order.food.name} layout="fill" objectFit="cover" className="rounded-md" />
+                ) : (
+                  <div className="h-full w-full bg-gray-100 rounded-md flex items-center justify-center">
+                    <span className="text-3xl">🍽️</span>
                   </div>
-                ))}
+                )}
               </div>
-
-              {/* Totals */}
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-semibold">${order.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Tax</span>
-                  <span className="font-semibold">${order.tax.toFixed(2)}</span>
-                </div>
+              <div className="flex-grow">
+                <h2 className="font-bold text-lg text-gray-900">{order.food.name}</h2>
+                <p className="text-sm text-gray-500">
+                  {order.quantity} x {order.food.price} ብር = <span className="font-semibold">{order.totalPrice} ብር</span>
+                </p>
+                <p className="text-xs text-gray-400">
+                  {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
               </div>
-
-              <div className="border-t border-border pt-4">
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span className="text-primary">${order.total.toFixed(2)}</span>
-                </div>
-              </div>
-
-              {/* Order Date */}
-              <div className="text-xs text-muted-foreground pt-2">
-                Ordered on {orderDate.toLocaleDateString()} at {orderDate.toLocaleTimeString()}
+              <div className="text-right">
+                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(order.orderStatus)}`}>
+                  {order.orderStatus}
+                </span>
+                <p className="text-sm text-gray-500 mt-1">Bono: #{order.bonoNumber}</p>
               </div>
             </div>
-
-            {/* New Order Button */}
-            {orderStatus === "completed" && (
-              <Link href="/menu" className="block mt-4">
-                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-                  Place New Order
-                </Button>
-              </Link>
-            )}
-          </div>
+          ))}
         </div>
-      </main>
+      ) : (
+        <div className="text-center py-16 px-6 bg-gray-50 rounded-lg">
+          <h3 className="text-xl font-semibold text-gray-700">No Orders Found</h3>
+          <p className="text-gray-500 mt-2">You haven not placed any orders yet. Start by adding items to your cart!</p>
+        </div>
+      )}
     </div>
-  )
+  );
 }
