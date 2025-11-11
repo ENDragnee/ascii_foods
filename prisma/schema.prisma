@@ -21,6 +21,8 @@ model User {
   password_hash String
   role      Role    @default(USER)
   createdAt DateTime @default(now())
+
+  orders    Orders[]
 }
 
 model Foods {
@@ -30,6 +32,8 @@ model Foods {
   category  FoodCategory  @default(NORMAL)
   imageUrl  String?
   createdAt DateTime @default(now())
+  
+  orders    Orders[]
 }
 
 model Orders {

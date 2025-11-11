@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: foods_admin
-      POSTGRES_PASSWORD: $(POSTGRES_PASSWORD)
+      POSTGRES_PASSWORD: qazwsxedc
       POSTGRES_DB: ascii_foods
     ports:
       - "5432:5432"
