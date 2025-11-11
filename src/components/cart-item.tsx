@@ -22,7 +22,8 @@ export function CartItem({ item, onRemove, onUpdateQuantity }: CartItemProps) {
   return (
     <div className="flex gap-4 p-4 bg-card rounded-lg border border-border">
       {/* Image */}
-      <div className="w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+      {/* --- MODIFIED LINE --- */}
+      <div className="w-24 h-24 rounded-lg overflow-hidden bg-muted shrink-0">
         <img src={item.image || "/placeholder.svg"} alt={item.name} className="w-full h-full object-cover" />
       </div>
 

@@ -2,8 +2,17 @@
 
 import { useState, useEffect } from "react"
 
-const DISHES = ["እንቁላል ፍርፍር", "ፓስታ በአትክልት", "ሩዝ በአትክልት", "ዩዟዩ ፍትፍት", "ስፔሻል ሳንዱች"]
+// An array of dishes to be displayed in the hero section.
+const DISHES = ["እንቁላል ፍርፍር", "ፓስታ በአትክልት", "ሩዝ በአትክልት", "ሶያ", "ተጋቢኖ", "የቤቱ ስፔሻል", "ጨጨብሳ", "ስፔሻል ሳንዱች"]
 
+/**
+ * A hero component for a restaurant website with an animated background,
+ * a typing effect for dish names, and a call-to-action button.
+ *
+ * @param {{ onEnter: () => void }} props - Component props.
+ * @param {() => void} props.onEnter - Function to be called when the enter button is clicked.
+ * @returns {JSX.Element} The rendered hero component.
+ */
 export default function RestaurantHero({ onEnter }: { onEnter: () => void }) {
   const [displayText, setDisplayText] = useState("")
   const [dishIndex, setDishIndex] = useState(0)
@@ -11,84 +20,84 @@ export default function RestaurantHero({ onEnter }: { onEnter: () => void }) {
 
   useEffect(() => {
     const currentDish = DISHES[dishIndex]
-    const timeout = setTimeout(
-      () => {
-        if (!isDeleting && displayText === currentDish) {
-          setIsDeleting(true)
-        } else if (isDeleting && displayText === "") {
-          setIsDeleting(false)
-          setDishIndex((dishIndex + 1) % DISHES.length)
-        } else {
-          setDisplayText(
-            isDeleting
-              ? currentDish.substring(0, displayText.length - 1)
-              : currentDish.substring(0, displayText.length + 1),
-          )
-        }
-      },
-      isDeleting ? 50 : 100,
-    )
+    const typingSpeed = isDeleting ? 50 : 100
+
+    const timeout = setTimeout(() => {
+      if (!isDeleting && displayText === currentDish) {
+        // Pause before deleting
+        setTimeout(() => setIsDeleting(true), 1500)
+      } else if (isDeleting && displayText === "") {
+        setIsDeleting(false)
+        setDishIndex((prevIndex) => (prevIndex + 1) % DISHES.length)
+      } else {
+        setDisplayText(
+          isDeleting
+            ? currentDish.substring(0, displayText.length - 1)
+            : currentDish.substring(0, displayText.length + 1),
+        )
+      }
+    }, typingSpeed)
 
     return () => clearTimeout(timeout)
   }, [displayText, dishIndex, isDeleting])
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 opacity-20">
-        <div
-          className="absolute top-10 left-10 w-32 h-32 rounded-full"
-          style={{ background: "radial-gradient(circle, #ff611d 0%, transparent 70%)" }}
-        />
-        <div
-          className="absolute bottom-10 right-10 w-40 h-40 rounded-full"
-          style={{ background: "radial-gradient(circle, #ffb80e 0%, transparent 70%)" }}
-        />
-      </div>
+    <div className="relative min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 overflow-hidden" style={{ background: "radial-gradient(circle, #f9f5f5 0%, #f0e5e5 100%)" }}>
+      {/* Textured background element */}
+      <div className="absolute inset-0 bg-[url('/path-to-your-subtle-food-texture.svg')] opacity-5" />
 
-      {/* Main content */}
-      <div className="relative z-10 text-center max-w-2xl">
-        {/* Animated title */}
-        <h1 className="text-6xl md:text-8xl font-bold mb-8 tracking-tighter" style={{ color: "#ff611d" }}>
-          ምናሌ
+      {/* Interactive background elements with parallax effect */}
+      <div
+        className="absolute top-10 left-10 w-32 h-32 rounded-full transition-transform duration-500 transform hover:scale-110"
+        style={{ background: "radial-gradient(circle, #ffd700 0%, transparent 70%)", opacity: 0.5 }}
+      />
+      <div
+        className="absolute bottom-10 right-10 w-40 h-40 rounded-full transition-transform duration-500 transform hover:scale-110"
+        style={{ background: "radial-gradient(circle, #db1020 0%, transparent 70%)", opacity: 0.5 }}
+      />
+      <div
+        className="absolute top-1/2 left-1/4 w-24 h-24 rounded-full transition-transform duration-500 transform hover:scale-110"
+        style={{ background: "radial-gradient(circle, #27742d 0%, transparent 70%)", opacity: 0.4 }}
+      />
+
+
+      <div className="relative z-10 text-center max-w-3xl">
+        <h1 className="text-6xl md:text-8xl font-extrabold mb-4 tracking-tighter" style={{ color: "#db1020" }}>
+          KK yellow
         </h1>
 
-        {/* Animated dish carousel */}
+        <p className="text-lg md:text-xl mb-8 opacity-80 leading-relaxed" style={{ lineHeight: 1.6 }}>ትኩስ እጅ የሚያሰቆረጥም ጣእም!!!</p>
+
         <div className="mb-12 h-24 flex items-center justify-center">
-          <p className="text-3xl md:text-5xl font-light" style={{ color: "#ffb80e", minHeight: "3rem" }}>
+          <p className="text-3xl md:text-5xl font-light" style={{ color: "#27742d", minHeight: "3rem" }}>
             {displayText}
             <span className="animate-pulse">|</span>
           </p>
         </div>
 
-        {/* Description */}
-        <p className="text-lg md:text-xl mb-8 opacity-80 leading-relaxed">ሙቀት፣ ጥንካሬ እና ባህላዊ ጣዕም። ተወዳጀ አለበት።</p>
-
-        {/* Enter button */}
         <button
           onClick={onEnter}
-          className="relative group px-8 py-4 text-lg font-bold rounded-full overflow-hidden"
+          className="group relative px-8 py-4 text-lg font-bold rounded-full overflow-hidden transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-yellow-300"
           style={{
-            background: "linear-gradient(135deg, #ff611d 0%, #e32929 100%)",
-            color: "white",
+            background: "linear-gradient(135deg, #ffd700 0%, #db1020 100%)",
+            color: "#f9f5f5",
+            boxShadow: "0 4px 15px 0 rgba(219, 16, 32, 0.75)",
           }}
         >
+          <span className="relative z-10"> ጀምር</span>
           <div
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: "linear-gradient(135deg, #ffb80e 0%, #ff611d 100%)" }}
-          />
-          <span className="relative">አሁን ጀምር</span>
+            className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"
+           />
         </button>
 
-        {/* Floating decorative elements */}
         <div className="mt-16 flex justify-center gap-4">
           {["🌶️", "🍚", "🥘"].map((emoji, idx) => (
             <div
               key={idx}
-              className="w-12 h-12 rounded-full flex items-center justify-center text-2xl animate-bounce"
+              className="w-16 h-16 rounded-full flex items-center justify-center text-3xl transition-transform duration-300 transform hover:rotate-12 hover:scale-110"
               style={{
-                background: "rgba(255, 97, 29, 0.1)",
-                animationDelay: `${idx * 0.1}s`,
+                background: "rgba(39, 116, 45, 0.1)",
+                animation: `bounce 2s infinite ${idx * 0.2}s`,
               }}
             >
               {emoji}
