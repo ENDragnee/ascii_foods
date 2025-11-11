@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSelector, useDispatch } from "react-redux";
 import { LayoutGrid, List, Search } from "lucide-react";
+import { useRouter } from "next/navigation"; // Import the App Router's router
 
 import MenuCard from "./menu-card";
 import CartPreview from "./cart-preview";
@@ -14,13 +15,7 @@ import { RootState } from "@/store";
 import { MenuItem, CartItem } from "@/types";
 
 interface MenuExperienceProps {
-  onOrderAction: (order: CartItem[]) => void;
   onBackAction: () => void;
-}
-
-// Define a specific type for the authentication error we might receive
-interface AuthError extends Error {
-  wasAuthenticated?: boolean;
 }
 
 // Map database categories from your Prisma schema to user-friendly UI
@@ -42,37 +37,37 @@ async function fetchMenus(): Promise<MenuItem[]> {
 
 async function fetchFavorites(): Promise<string[] | null> {
   const response = await fetch("/api/favorites");
-  if (response.status === 401) {
-    return null; // Represents an unauthenticated user
-  }
-  if (!response.ok) {
-    throw new Error("Failed to fetch favorites");
-  }
+  if (response.status === 401) return null;
+  if (!response.ok) throw new Error("Failed to fetch favorites");
   return response.json();
 }
 
-// ✅ FIX: The mutation function's return type is now explicitly defined.
-async function toggleFavorite(foodId: string): Promise<{ wasAuthenticated: boolean }> {
+async function toggleFavorite(foodId: string) {
   const response = await fetch("/api/favorites", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ foodId }),
   });
-  if (response.status === 401) {
-    // If the session expired, we create a specific error object shape
-    const error: AuthError = new Error("User is not authenticated.");
-    error.wasAuthenticated = false;
-    throw error;
-  }
-  if (!response.ok) {
-    throw new Error("Failed to toggle favorite");
-  }
-  const data = await response.json();
-  return { ...data, wasAuthenticated: true };
+  if (!response.ok) throw new Error("Failed to toggle favorite");
+  return response.json();
 }
 
-export default function MenuExperience({ onOrderAction, onBackAction }: MenuExperienceProps) {
+// New API function for creating an order
+async function createOrder(items: CartItem[]) {
+  const response = await fetch("/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to place order.");
+  }
+  return response.json();
+}
+
+export default function MenuExperience({ onBackAction }: MenuExperienceProps) {
   const queryClient = useQueryClient();
+  const router = useRouter(); // Initialize the router
   const viewMode = useSelector((state: RootState) => state.viewMode.mode);
   const dispatch = useDispatch();
 
@@ -98,39 +93,43 @@ export default function MenuExperience({ onOrderAction, onBackAction }: MenuExpe
   const isAuthenticated = favoriteIds !== null && favoriteIds !== undefined;
   const favoritesSet = useMemo(() => new Set(favoriteIds || []), [favoriteIds]);
 
-  // --- Mutation for Toggling Favorites ---
+  // --- Mutations for Favorites and Orders ---
   const toggleFavoriteMutation = useMutation({
     mutationFn: toggleFavorite,
     onMutate: async (foodId: string) => {
       await queryClient.cancelQueries({ queryKey: ["favorites"] });
       const previousFavorites = queryClient.getQueryData<string[] | null>(["favorites"]);
-
-      // ✅ FIX: Add a guard clause to handle the 'undefined' and 'null' cases.
-      // We can only perform an optimistic update if we have a valid array of favorites.
-      if (!previousFavorites) {
-        return { previousFavorites: [] }; // Return an empty array to prevent crash
-      }
-
+      if (!previousFavorites) return { previousFavorites: [] };
       const newFavorites = favoritesSet.has(foodId)
         ? previousFavorites.filter((id) => id !== foodId)
-        : [...previousFavorites, foodId]; // ✅ FIX: This is now safe because previousFavorites is guaranteed to be an array.
-
+        : [...previousFavorites, foodId];
       queryClient.setQueryData(["favorites"], newFavorites);
       return { previousFavorites };
     },
-    // ✅ FIX: Use our defined AuthError type and a prefixed variable for the unused 'foodId'.
-    onError: (err: AuthError, _foodId, context) => {
-      // If the mutation failed because authentication was lost, trigger the login prompt.
-      if (err.wasAuthenticated === false) {
-        setShowLoginPrompt(true);
-      }
-      // Rollback optimistic update
+    onError: (err, _foodId, context) => {
       if (context?.previousFavorites !== undefined) {
         queryClient.setQueryData(["favorites"], context.previousFavorites);
       }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["favorites"] });
+    },
+  });
+
+  const placeOrderMutation = useMutation({
+    mutationFn: createOrder,
+    onSuccess: () => {
+      // On successful order, clear the cart, close the preview,
+      // invalidate the orders query, and redirect the user.
+      setCart(new Map());
+      setShowCart(false);
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      router.push('/orders');
+    },
+    onError: (error) => {
+      // In a real app, you would show a toast notification here.
+      console.error("Order failed:", error);
+      alert("There was an error placing your order. Please try again.");
     },
   });
 
@@ -153,6 +152,13 @@ export default function MenuExperience({ onOrderAction, onBackAction }: MenuExpe
       }
     } else {
       setSelectedCategory(categoryKey);
+    }
+  };
+
+  const handleCheckout = () => {
+    const cartItems = getCartItems();
+    if (cartItems.length > 0) {
+      placeOrderMutation.mutate(cartItems);
     }
   };
 
@@ -189,7 +195,6 @@ export default function MenuExperience({ onOrderAction, onBackAction }: MenuExpe
       quantity,
     }));
   const total = getCartItems().reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const handleCheckout = () => onOrderAction(getCartItems());
 
   if (isMenuLoading) {
     return <div className="flex justify-center items-center min-h-screen">Loading Menu...</div>;
@@ -259,7 +264,12 @@ export default function MenuExperience({ onOrderAction, onBackAction }: MenuExpe
         )}
       </main>
       {showCart && cart.size > 0 && (
-        <CartPreview items={getCartItems()} total={total} onCheckout={handleCheckout} />
+        <CartPreview
+          items={getCartItems()}
+          total={total}
+          onCheckout={handleCheckout}
+          isPlacingOrder={placeOrderMutation.isPending}
+        />
       )}
     </div>
   );

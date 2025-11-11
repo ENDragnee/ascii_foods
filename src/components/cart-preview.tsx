@@ -1,15 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import { CartItem } from "@/types"; // <-- IMPORT SHARED TYPE
+import { CartItem } from "@/types";
+import { Loader2 } from "lucide-react"; // A nice loading spinner icon
 
 interface CartPreviewProps {
   items: CartItem[];
   total: number;
+  isPlacingOrder: boolean; // New prop to indicate loading state
   onCheckout: () => void;
 }
 
-export default function CartPreview({ items, total, onCheckout }: CartPreviewProps) {
+export default function CartPreview({ items, total, isPlacingOrder, onCheckout }: CartPreviewProps) {
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-sm"
@@ -73,12 +75,17 @@ export default function CartPreview({ items, total, onCheckout }: CartPreviewPro
 
         <button
           onClick={onCheckout}
-          className="w-full py-3 rounded-full font-bold text-lg text-white transition-all hover:shadow-lg hover:scale-105"
+          disabled={isPlacingOrder} // Disable the button while the order is being placed
+          className="w-full py-3 rounded-full font-bold text-lg text-white transition-all hover:shadow-lg hover:scale-105 flex justify-center items-center disabled:opacity-70 disabled:cursor-not-allowed"
           style={{
             background: "linear-gradient(135deg, #db1020 0%, #a80c18 100%)",
           }}
         >
-          Checkout 📦
+          {isPlacingOrder ? (
+            <Loader2 className="animate-spin" /> // Show spinner when loading
+          ) : (
+            'Checkout 📦'
+          )}
         </button>
       </div>
     </div>
