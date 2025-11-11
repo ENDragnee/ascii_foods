@@ -1,27 +1,33 @@
 "use client";
 
 import Image from "next/image";
-
-// --- TYPE DEFINITIONS ---
-interface MenuItem {
-  id: string;
-  name: string;
-  price: number;
-  imageUrl?: string | null;
-}
+import { Star } from "lucide-react";
+import { MenuItem } from "@/types";
 
 interface MenuTableRowProps {
   item: MenuItem;
   isInCart: boolean;
   quantity: number;
+  isFavorite: boolean;
   onAdd: () => void;
   onRemove: () => void;
+  onToggleFavorite: (foodId: string) => void;
 }
 
-/**
- * A row component to display a single menu item in a list/table format.
- */
-export function MenuTableRow({ item, isInCart, quantity, onAdd, onRemove }: MenuTableRowProps) {
+export function MenuTableRow({
+  item,
+  isInCart,
+  quantity,
+  isFavorite,
+  onAdd,
+  onRemove,
+  onToggleFavorite,
+}: MenuTableRowProps) {
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleFavorite(item.id);
+  };
+
   return (
     <div
       className="flex items-center justify-between p-3 rounded-xl transition-all duration-300"
@@ -32,7 +38,7 @@ export function MenuTableRow({ item, isInCart, quantity, onAdd, onRemove }: Menu
       }}
     >
       {/* Left Section: Image and Info */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-grow">
         <div className="relative h-16 w-16 flex-shrink-0">
           {item.imageUrl ? (
             <Image
@@ -58,15 +64,23 @@ export function MenuTableRow({ item, isInCart, quantity, onAdd, onRemove }: Menu
         </div>
       </div>
 
-      {/* Right Section: Cart Controls */}
-      <div className="flex-shrink-0">
+      {/* Right Section: Favorite and Cart Controls */}
+      <div className="flex items-center gap-4 flex-shrink-0">
+        <button
+          onClick={handleFavoriteClick}
+          className="p-2 rounded-full hover:bg-yellow-100 transition-colors"
+          aria-label="Toggle Favorite"
+        >
+          <Star
+            className={`transition-all duration-200 ${isFavorite ? "text-yellow-500 fill-yellow-400" : "text-gray-400"}`}
+            size={24}
+          />
+        </button>
         {!isInCart ? (
           <button
             onClick={onAdd}
             className="py-2 px-5 rounded-lg font-bold text-sm text-white transition-all transform hover:scale-105"
-            style={{
-              background: "linear-gradient(135deg, #27742d 0%, #1f5c23 100%)",
-            }}
+            style={{ background: "linear-gradient(135deg, #27742d 0%, #1f5c23 100%)" }}
           >
             Add
           </button>
