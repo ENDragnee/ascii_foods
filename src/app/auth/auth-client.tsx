@@ -29,8 +29,7 @@ export default function AuthClientPage({
       await signInSocial(provider);
     } catch (err) {
       setError(
-        `Error authenticating with ${provider}: ${
-          err instanceof Error ? err.message : "Unknown error"
+        `Error authenticating with ${provider}: ${err instanceof Error ? err.message : "Unknown error"
         }`
       );
     } finally {
@@ -59,7 +58,7 @@ export default function AuthClientPage({
           setError("Invalid email or password");
         } else {
           // Navigate client-side immediately after successful sign in
-          router.push("/shop");
+          router.push("/menu");
         }
       } else {
         const result = await signUp(formEmail, formPassword, formName);
@@ -67,13 +66,12 @@ export default function AuthClientPage({
           setError("Failed to create account");
         } else {
           // Navigate client-side immediately after successful sign up
-          router.push("/shop");
+          router.push("/menu");
         }
       }
     } catch (err) {
       setError(
-        `Authentication error: ${
-          err instanceof Error ? err.message : "Unknown error"
+        `Authentication error: ${err instanceof Error ? err.message : "Unknown error"
         }`
       );
     } finally {
