@@ -10,7 +10,7 @@ export const signUp = async (email: string, password: string, name: string) => {
       email,
       password,
       name,
-      callbackURL: "/shop",
+      callbackURL: "/cart",
     },
   });
 
@@ -22,7 +22,7 @@ export const signIn = async (email: string, password: string) => {
     body: {
       email,
       password,
-      callbackURL: "/shop",
+      callbackURL: "/cart",
     },
   });
 
@@ -33,7 +33,7 @@ export const signInSocial = async (provider: "google" | "apple") => {
   const { url } = await auth.api.signInSocial({
     body: {
       provider,
-      callbackURL: "/shop",
+      callbackURL: "/cart",
     },
   });
 

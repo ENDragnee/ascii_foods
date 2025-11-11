@@ -20,21 +20,35 @@ export function SignUpView({ onSubmit, isLoading, handleSocial }: SignUpViewProp
           <div className="mb-12">
             <Link href="/" className="inline-block">
               <div className="flex items-center gap-2 mb-8">
-                <div className="w-8 h-8 bg-[#D4FF00] flex items-center justify-center">
-                  <span className="text-foreground font-bold text-xl">D</span>
+                <div
+                  className="w-8 h-8 flex items-center justify-center"
+                  style={{ backgroundColor: "var(--menu-primary)" }}
+                >
+                  <span className="text-white font-bold text-xl">KK</span>
                 </div>
-                <span className="text-2xl font-bold tracking-[0.2em] uppercase">DEMOBAZA</span>
+                <span
+                  className="text-2xl font-bold tracking-[0.2em] uppercase"
+                  style={{ color: "var(--menu-secondary)" }}
+                >
+                  YELLOW
+                </span>
               </div>
             </Link>
-            <h1 className="text-4xl font-bold tracking-tight mb-2">Create Account</h1>
-            <p className="text-muted-foreground">Join the future of fashion</p>
+            <h1 className="text-4xl font-bold tracking-tight mb-2" style={{ color: "var(--menu-secondary)" }}>
+              Create Account
+            </h1>
+            <p className="text-muted-foreground"></p>
           </div>
 
-          <SignUpForm onSubmit={onSubmit} isLoading={isLoading} handleSocial={handleSocial}/>
+          <SignUpForm onSubmit={onSubmit} isLoading={isLoading} handleSocial={handleSocial} />
 
           <div className="mt-8 text-center text-sm">
             <span className="text-muted-foreground">Already have an account? </span>
-            <Link href="/auth?view=signin" className="font-medium hover:underline underline-offset-4">
+            <Link
+              href="/auth?view=signin"
+              className="font-medium hover:underline underline-offset-4"
+              style={{ color: "var(--menu-primary)" }}
+            >
               Sign in
             </Link>
           </div>
@@ -42,17 +56,21 @@ export function SignUpView({ onSubmit, isLoading, handleSocial }: SignUpViewProp
       </div>
 
       {/* Right side - Image/Brand */}
-      <div className="hidden lg:flex flex-1 bg-muted relative overflow-hidden">
+      <div className="hidden lg:flex flex-1 bg-[var(--menu-background)] relative overflow-hidden">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative">
-            <div className="absolute -top-20 -left-20 w-64 h-64 bg-[#D4FF00] opacity-20" />
-            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[#D4FF00] opacity-20" />
+            <div className="absolute -top-20 -left-20 w-64 h-64 bg-[var(--menu-primary)] opacity-10" />
+            <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-[var(--menu-primary)] opacity-10" />
             <div className="relative z-10 text-center space-y-6 p-12">
-              <h2 className="text-6xl font-bold tracking-[0.3em] uppercase">SHELL HOOD WORLD</h2>
-              <p className="text-xl tracking-wider uppercase text-muted-foreground">Complete Look Collection</p>
+              <h2 className="text-6xl font-bold tracking-[0.3em] uppercase" style={{ color: "var(--menu-secondary)" }}>
+                KK Food Ordering
+              </h2>
+              <p className="text-xl tracking-wider uppercase" style={{ color: "var(--menu-secondary)" }}>
+                Hungry? Join now and get your favorite meals delivered faster than you can say ‘I’m starving!’ 🍕
+              </p>
               <div className="pt-8">
-                <div className="inline-block bg-[#D4FF00] px-8 py-4">
-                  <span className="text-foreground font-bold tracking-wider uppercase">Organic Cotton Blend</span>
+                <div className="inline-block px-8 py-4" style={{ backgroundColor: "var(--menu-primary)" }}>
+                  <span className="font-bold tracking-wider uppercase text-white">Ordering Made Easy</span>
                 </div>
               </div>
             </div>
@@ -62,3 +80,5 @@ export function SignUpView({ onSubmit, isLoading, handleSocial }: SignUpViewProp
     </div>
   )
 }
+
+export default SignUpView
