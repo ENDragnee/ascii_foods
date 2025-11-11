@@ -2,7 +2,6 @@ import { PrismaClient, FoodCategory } from "../src/generated/prisma/client";
 
 const prisma = new PrismaClient();
 
-// ... (food data)
 const foodData = [
   // --- Breakfast Items (Mapped to NORMAL category) ---
   {
