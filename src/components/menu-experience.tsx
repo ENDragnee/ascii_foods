@@ -20,10 +20,10 @@ interface MenuExperienceProps {
 // --- MOCK DATA (Favorites) ---
 const CATEGORIES = [
   "all",
-  "favorites",
+  "normal",
   "breakfast",
   "main",
-  "specialty",
+  "special",
   "sides",
 ];
 const MOCK_FAVORITES = ["cmhv21uya0000rav575vl7dlg", "cmhv21uya0002rav5wram8ibg"];
