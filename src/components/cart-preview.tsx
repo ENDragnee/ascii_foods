@@ -1,52 +1,59 @@
-"use client"
+"use client";
 
-interface CartItem {
-  id: number
-  name: string
-  price: number
-  qty: number
-  emoji: string
+import Image from "next/image";
+import { CartItem } from "@/types"; // <-- IMPORT SHARED TYPE
+
+interface CartPreviewProps {
+  items: CartItem[];
+  total: number;
+  onCheckout: () => void;
 }
 
-export default function CartPreview({
-  items,
-  total,
-  onCheckout,
-}: {
-  items: CartItem[]
-  total: number
-  onCheckout: () => void
-}) {
+export default function CartPreview({ items, total, onCheckout }: CartPreviewProps) {
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-md"
-      style={{ background: "rgba(26, 20, 16, 0.95)", borderTop: "2px solid #ff611d" }}
+      className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-sm"
+      style={{ background: "rgba(255, 255, 255, 0.8)", borderTop: "2px solid #db1020" }}
     >
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        <h3 className="text-xl font-bold mb-4" style={{ color: "#ffb80e" }}>
-          የተመረጡ ምግቦች
+      <div className="max-w-6xl mx-auto px-4 py-5">
+        <h3 className="text-xl font-bold mb-4" style={{ color: "#27742d" }}>
+          Your Order
         </h3>
 
-        <div className="max-h-48 overflow-y-auto mb-4 space-y-2">
+        <div className="max-h-48 overflow-y-auto mb-4 space-y-2 pr-2">
           {items.map((item) => (
             <div
               key={item.id}
-              className="flex items-center justify-between p-3 rounded-lg"
-              style={{ background: "rgba(255, 97, 29, 0.1)" }}
+              className="flex items-center justify-between p-2 rounded-lg"
+              style={{ background: "rgba(39, 116, 45, 0.05)" }}
             >
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{item.emoji}</span>
+                <div className="relative h-12 w-12 flex-shrink-0">
+                  {item.imageUrl ? (
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.name}
+                      layout="fill"
+                      objectFit="cover"
+                      className="rounded-md"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gray-100 rounded-md flex items-center justify-center">
+                      <span className="text-2xl">🍽️</span>
+                    </div>
+                  )}
+                </div>
                 <div>
-                  <p className="font-semibold" style={{ color: "#ffb80e" }}>
+                  <p className="font-semibold" style={{ color: "#27742d" }}>
                     {item.name}
                   </p>
-                  <p className="text-sm opacity-70">
-                    {item.price} ብር × {item.qty}
+                  <p className="text-sm text-gray-500">
+                    {item.price} ብር × {item.quantity}
                   </p>
                 </div>
               </div>
-              <p className="font-bold" style={{ color: "#ff611d" }}>
-                {item.price * item.qty} ብር
+              <p className="font-bold text-gray-800">
+                {item.price * item.quantity} ብር
               </p>
             </div>
           ))}
@@ -54,27 +61,26 @@ export default function CartPreview({
 
         <div
           className="flex items-center justify-between mb-4 p-4 rounded-lg"
-          style={{ background: "rgba(255, 184, 14, 0.1)" }}
+          style={{ background: "rgba(39, 116, 45, 0.1)" }}
         >
-          <p className="text-lg font-bold" style={{ color: "#ffb80e" }}>
-            አጠቃላይ:
+          <p className="text-lg font-bold" style={{ color: "#27742d" }}>
+            Total:
           </p>
-          <p className="text-2xl font-bold" style={{ color: "#ff611d" }}>
+          <p className="text-2xl font-bold" style={{ color: "#db1020" }}>
             {total} ብር
           </p>
         </div>
 
         <button
           onClick={onCheckout}
-          className="w-full py-4 rounded-full font-bold text-lg transition-all hover:shadow-lg"
+          className="w-full py-3 rounded-full font-bold text-lg text-white transition-all hover:shadow-lg hover:scale-105"
           style={{
-            background: "linear-gradient(135deg, #ff611d 0%, #e32929 100%)",
-            color: "white",
+            background: "linear-gradient(135deg, #db1020 0%, #a80c18 100%)",
           }}
         >
-          መፈጸም 📦
+          Checkout 📦
         </button>
       </div>
     </div>
-  )
+  );
 }
