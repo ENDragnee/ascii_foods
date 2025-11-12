@@ -9,13 +9,3 @@ export interface MenuItem {
 export interface CartItem extends MenuItem {
   quantity: number;
 }
-
-export interface Session {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
-  sessionId: string;
-  expiresAt: Date;
-}
