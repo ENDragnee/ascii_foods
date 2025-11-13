@@ -9,16 +9,16 @@ datasource db {
 }
 
 model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  role          Role      @default(USER)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  orders        Orders[]
+  id             String           @id
+  name           String
+  email          String
+  emailVerified  Boolean          @default(false)
+  role           Role             @default(USER)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @default(now()) @updatedAt
+  sessions       Session[]
+  accounts       Account[]
+  orders         Orders[]
   favouriteFoods FavouriteFoods[]
 
   @@unique([email])
@@ -78,16 +78,16 @@ model Foods {
   imageUrl  String?
   createdAt DateTime     @default(now())
 
-  orders Orders[]
+  orders         Orders[]
   favouriteFoods FavouriteFoods[]
 }
 
 model FavouriteFoods {
-  id      String @id @default(cuid())
-  userId  String
-  foodId  String
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  food    Foods  @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  foodId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  food   Foods  @relation(fields: [foodId], references: [id], onDelete: Cascade)
 
   // This ensures a user can only favorite a specific food once.
   @@unique([userId, foodId])
@@ -98,13 +98,13 @@ model Orders {
   userId        String
   foodId        String
   quantity      Int
-  bonoNumber    Int
+  bonoNumber    Int           @default(1)
   orderStatus   OrderStatus   @default(PENDING)
   totalPrice    Float
   paymentStatus PaymentStatus @default(NOTPAID)
   createdAt     DateTime      @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user User  @relation(fields: [userId], references: [id], onDelete: Restrict)
   food Foods @relation(fields: [foodId], references: [id], onDelete: Restrict)
 }
 
