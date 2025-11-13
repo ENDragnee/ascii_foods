@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { prisma } from "@/lib/prisma";
 
 export const auth = betterAuth({
+  // Now, the prismaAdapter uses the shared, singleton instance
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
