@@ -6,20 +6,26 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
+import { AuthErrorDisplay } from "@/components/auth-error-display"
 
 export function SignUpForm({
   onSubmit,
   isLoading = false,
   handleSocial,
+  error = "",
 }: {
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
   isLoading?: boolean
   handleSocial: (provider: "google" | "apple") => Promise<void>
+  error?: string
 }) {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     confirmPassword: "",
+    firstName: "",
+    lastName: "",
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -76,10 +82,17 @@ export function SignUpForm({
   }
 
   const isFormValid =
-    formData.email && formData.password && formData.confirmPassword && Object.keys(errors).length === 0
+    formData.email &&
+    formData.password &&
+    formData.confirmPassword &&
+    formData.firstName &&
+    formData.lastName &&
+    Object.keys(errors).length === 0
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">
+      {error && <AuthErrorDisplay error={error} />}
+
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -96,7 +109,9 @@ export function SignUpForm({
               autoCorrect="off"
               disabled={isLoading}
               required
-              className="border-2 focus-visible:ring-0 focus-visible:border-[var(--menu-primary)]"
+              value={formData.firstName}
+              onChange={handleChange}
+              className="border-2 focus-visible:ring-0 focus-visible:border-menu-primary"
               style={{ borderColor: "var(--menu-border)" }}
             />
           </div>
@@ -114,7 +129,9 @@ export function SignUpForm({
               autoCorrect="off"
               disabled={isLoading}
               required
-              className="border-2 focus-visible:ring-0 focus-visible:border-[var(--menu-primary)]"
+              value={formData.lastName}
+              onChange={handleChange}
+              className="border-2 focus-visible:ring-0 focus-visible:border-menu-primary"
               style={{ borderColor: "var(--menu-border)" }}
             />
           </div>
@@ -136,7 +153,7 @@ export function SignUpForm({
             required
             value={formData.email}
             onChange={handleChange}
-            className={`border-2 focus-visible:ring-0 focus-visible:border-[var(--menu-primary)] ${
+            className={`border-2 focus-visible:ring-0 focus-visible:border-menu-primary ${
               errors.email ? "border-red-500" : ""
             }`}
             style={{ borderColor: errors.email ? undefined : "var(--menu-border)" }}
@@ -159,7 +176,7 @@ export function SignUpForm({
             required
             value={formData.password}
             onChange={handleChange}
-            className={`border-2 focus-visible:ring-0 focus-visible:border-[var(--menu-primary)] ${
+            className={`border-2 focus-visible:ring-0 focus-visible:border-menu-primary ${
               errors.password ? "border-red-500" : ""
             }`}
             style={{ borderColor: errors.password ? undefined : "var(--menu-border)" }}
@@ -182,7 +199,7 @@ export function SignUpForm({
             required
             value={formData.confirmPassword}
             onChange={handleChange}
-            className={`border-2 focus-visible:ring-0 focus-visible:border-[var(--menu-primary)] ${
+            className={`border-2 focus-visible:ring-0 focus-visible:border-menu-primary ${
               errors.confirmPassword ? "border-red-500" : ""
             }`}
             style={{ borderColor: errors.confirmPassword ? undefined : "var(--menu-border)" }}

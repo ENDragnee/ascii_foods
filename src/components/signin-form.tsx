@@ -5,19 +5,24 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { AuthErrorDisplay } from "@/components/auth-error-display"
 import Link from "next/link"
 
 export function SignInForm({
   onSubmit,
   isLoading = false,
   handleSocial,
+  error = "",
 }: {
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
   isLoading?: boolean
   handleSocial: (provider: "google" | "apple") => Promise<void>
+  error?: string
 }) {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
+      {error && <AuthErrorDisplay error={error} />}
+
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email" className="uppercase text-xs tracking-wider font-medium">
@@ -33,7 +38,7 @@ export function SignInForm({
             autoCorrect="off"
             disabled={isLoading}
             required
-            className="border-2 focus-visible:ring-0 focus-visible:border-[var(--menu-primary)]"
+            className="border-2 focus-visible:ring-0 focus-visible:border-menu-primary"
             style={{ borderColor: "var(--menu-border)" }}
           />
         </div>
@@ -59,20 +64,10 @@ export function SignInForm({
             autoComplete="current-password"
             disabled={isLoading}
             required
-            className="border-2 focus-visible:ring-0 focus-visible:border-[var(--menu-primary)]"
+            className="border-2 focus-visible:ring-0 focus-visible:border-menu-primary"
             style={{ borderColor: "var(--menu-border)" }}
           />
         </div>
-      </div>
-
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="remember"
-          className="data-[state=checked]:bg-[var(--menu-primary)] data-[state=checked]:border-[var(--menu-primary)]"
-        />
-        <label htmlFor="remember" className="text-sm text-muted-foreground">
-          Remember me
-        </label>
       </div>
 
       <Button
