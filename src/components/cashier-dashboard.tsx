@@ -45,11 +45,11 @@ const generateMockOrder = (status: "new" | "preparing" | "ready"): Order => {
   }
 }
 
-interface AdminDashboardProps {
+interface CashierDashboardProps {
   onNewOrder?: (orderId: string, itemCount: number) => void
 }
 
-export default function AdminDashboard({ onNewOrder }: AdminDashboardProps) {
+export default function CashierDashboard({ onNewOrder }: CashierDashboardProps) {
   const [orders, setOrders] = useState<Order[]>([
     generateMockOrder("new"),
     generateMockOrder("new"),

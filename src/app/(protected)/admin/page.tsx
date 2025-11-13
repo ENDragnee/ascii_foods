@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useRef } from "react"
-import AdminDashboard from "@/components/admin-dashboard"
-import HomePage from "@/components/home-page"
+import AdminPage from "@/components/admin-home-page"
 import MenuPublish from "@/components/menu-publish"
 import Notification from "@/components/notification"
+import CashierDashboard from "@/components/cashier-dashboard"
 
 export default function Page() {
   const [currentPage, setCurrentPage] = useState<"home" | "orders" | "menu">("home")
@@ -51,31 +51,28 @@ export default function Page() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCurrentPage("home")}
-                className={`px-4 py-2.5 rounded-lg font-semibold transition-all transform hover:scale-105 ${
-                  currentPage === "home"
-                    ? "bg-white text-blue-600 shadow-lg"
-                    : "text-white hover:bg-white/20 backdrop-blur-sm"
-                }`}
+                className={`px-4 py-2.5 rounded-lg font-semibold transition-all transform hover:scale-105 ${currentPage === "home"
+                  ? "bg-white text-blue-600 shadow-lg"
+                  : "text-white hover:bg-white/20 backdrop-blur-sm"
+                  }`}
               >
                 Dashboard
               </button>
               <button
                 onClick={() => setCurrentPage("orders")}
-                className={`px-4 py-2.5 rounded-lg font-semibold transition-all transform hover:scale-105 ${
-                  currentPage === "orders"
-                    ? "bg-white text-blue-600 shadow-lg"
-                    : "text-white hover:bg-white/20 backdrop-blur-sm"
-                }`}
+                className={`px-4 py-2.5 rounded-lg font-semibold transition-all transform hover:scale-105 ${currentPage === "orders"
+                  ? "bg-white text-blue-600 shadow-lg"
+                  : "text-white hover:bg-white/20 backdrop-blur-sm"
+                  }`}
               >
                 Orders
               </button>
               <button
                 onClick={() => setCurrentPage("menu")}
-                className={`px-4 py-2.5 rounded-lg font-semibold transition-all transform hover:scale-105 ${
-                  currentPage === "menu"
-                    ? "bg-white text-blue-600 shadow-lg"
-                    : "text-white hover:bg-white/20 backdrop-blur-sm"
-                }`}
+                className={`px-4 py-2.5 rounded-lg font-semibold transition-all transform hover:scale-105 ${currentPage === "menu"
+                  ? "bg-white text-blue-600 shadow-lg"
+                  : "text-white hover:bg-white/20 backdrop-blur-sm"
+                  }`}
               >
                 Menu
               </button>
@@ -93,9 +90,9 @@ export default function Page() {
       />
 
       {currentPage === "home" ? (
-        <HomePage />
+        <AdminPage />
       ) : currentPage === "orders" ? (
-        <AdminDashboard onNewOrder={showNotification} />
+        <CashierDashboard onNewOrder={showNotification} />
       ) : (
         <MenuPublish />
       )}

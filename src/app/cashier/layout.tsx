@@ -8,7 +8,7 @@ export default async function CashierDashboardLayout({
 }) {
   const session = await requireAuth();
 
-  if (!session || session.user?.role !== 'CASHIER') {
+  if (!session || session.user?.role !== 'ADMIN') {
     redirect('/auth?view=signin');
   }
 

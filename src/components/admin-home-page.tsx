@@ -12,7 +12,7 @@ interface OrderStats {
   completionRate: number
 }
 
-export default function HomePage() {
+export default function AdminPage() {
   const [stats, setStats] = useState<OrderStats>({
     newOrdersCount: 12,
     preparingCount: 8,
@@ -186,31 +186,28 @@ export default function HomePage() {
             {issues.map((issue) => (
               <div
                 key={issue.id}
-                className={`p-4 rounded-lg border-l-4 flex items-start gap-4 ${
-                  issue.severity === "high"
-                    ? "bg-red-50 border-red-400 border-l-4"
-                    : issue.severity === "medium"
-                      ? "bg-yellow-50 border-yellow-400 border-l-4"
-                      : "bg-green-50 border-green-400 border-l-4"
-                }`}
+                className={`p-4 rounded-lg border-l-4 flex items-start gap-4 ${issue.severity === "high"
+                  ? "bg-red-50 border-red-400 border-l-4"
+                  : issue.severity === "medium"
+                    ? "bg-yellow-50 border-yellow-400 border-l-4"
+                    : "bg-green-50 border-green-400 border-l-4"
+                  }`}
               >
                 <div
-                  className={`p-2 rounded-lg flex-shrink-0 ${
-                    issue.severity === "high"
-                      ? "bg-red-100"
-                      : issue.severity === "medium"
-                        ? "bg-yellow-100"
-                        : "bg-green-100"
-                  }`}
+                  className={`p-2 rounded-lg flex-shrink-0 ${issue.severity === "high"
+                    ? "bg-red-100"
+                    : issue.severity === "medium"
+                      ? "bg-yellow-100"
+                      : "bg-green-100"
+                    }`}
                 >
                   <AlertTriangle
-                    className={`w-5 h-5 ${
-                      issue.severity === "high"
-                        ? "text-red-600"
-                        : issue.severity === "medium"
-                          ? "text-yellow-600"
-                          : "text-green-600"
-                    }`}
+                    className={`w-5 h-5 ${issue.severity === "high"
+                      ? "text-red-600"
+                      : issue.severity === "medium"
+                        ? "text-yellow-600"
+                        : "text-green-600"
+                      }`}
                   />
                 </div>
                 <div className="flex-1">
