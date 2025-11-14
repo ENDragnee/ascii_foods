@@ -1,5 +1,6 @@
 import { requireAuth } from '@/lib/serverAuth';
 import { redirect } from 'next/navigation';
+import { AblyProvider } from '@/components/ably-provider';
 
 export default async function CashierDashboardLayout({
   children,
@@ -16,7 +17,9 @@ export default async function CashierDashboardLayout({
     <div className="min-h-screen w-full bg-muted/40">
       <div className="flex flex-col sm:pl-14 md:pl-64">
         <main className="flex-1 p-4 sm:p-6">
-          {children}
+          <AblyProvider>
+            {children}
+          </AblyProvider>
         </main>
       </div>
     </div>

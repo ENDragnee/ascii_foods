@@ -9,14 +9,9 @@ export default function Menu() {
   const onBackAction = () => {
     router.push("/")
   }
-
-  const onOrderAction = () => {
-    router.push("/orders")
-  }
-
   return (
     <div className="min-h-screen" style={{ background: "linear-gradient(135deg, #1a1410 0%, #2d1f17 100%)" }}>
-      <MenuExperience onBackAction={onBackAction} onOrderAction={onOrderAction} />
+      <MenuExperience onBackAction={onBackAction} />
     </div>
   )
 }
