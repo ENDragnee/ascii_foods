@@ -80,6 +80,30 @@ model Foods {
 
   orders         Orders[]
   favouriteFoods FavouriteFoods[]
+
+  dailyMenuItems DailyMenuItems[]
+}
+
+// This model represents the menu for a specific day
+model DailyMenu {
+  id     String   @id @default(cuid())
+  date   DateTime @unique @db.Date 
+  name   String?  // Optional name like "Tuesday Lunch Specials"
+  day    DAY?      @default(MONDAY)
+
+  items  DailyMenuItems[]
+}
+
+// This is the "join table" that connects a DailyMenu to a Food
+model DailyMenuItems {
+  id          String @id @default(cuid())
+  dailyMenuId String
+  dailyMenu   DailyMenu @relation(fields: [dailyMenuId], references: [id], onDelete: Cascade)
+  foodId      String
+  food        Foods     @relation(fields: [foodId], references: [id], onDelete: Cascade)
+  
+  // Ensures a food can only be added once to the same daily menu
+  @@unique([dailyMenuId, foodId])
 }
 
 model FavouriteFoods {
@@ -106,6 +130,16 @@ model Orders {
 
   user User  @relation(fields: [userId], references: [id], onDelete: Restrict)
   food Foods @relation(fields: [foodId], references: [id], onDelete: Restrict)
+}
+
+enum DAY {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
 }
 
 enum Role {

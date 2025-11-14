@@ -2,51 +2,53 @@
 
 import { useState } from "react"
 import { Check, Eye, EyeOff } from "lucide-react"
+import { useAdminMenu } from "@/hooks/use-admin"
 
-interface MenuItem {
-  id: string
-  name: string
-  emoji: string
-  price: number
-  category: string
-  available: boolean
-}
-
-const availableMenuItems: MenuItem[] = [
-  { id: "1", name: "Margherita Pizza", emoji: "🍕", price: 12.99, category: "Pizza", available: true },
-  { id: "2", name: "Pepperoni Pizza", emoji: "🍕", price: 14.99, category: "Pizza", available: true },
-  { id: "3", name: "Veggie Pizza", emoji: "🍕", price: 13.99, category: "Pizza", available: false },
-  { id: "4", name: "Classic Burger", emoji: "🍔", price: 10.99, category: "Burgers", available: true },
-  { id: "5", name: "Cheese Burger", emoji: "🍔", price: 11.99, category: "Burgers", available: true },
-  { id: "6", name: "Bacon Burger", emoji: "🍔", price: 13.99, category: "Burgers", available: true },
-  { id: "7", name: "French Fries", emoji: "🍟", price: 4.99, category: "Sides", available: true },
-  { id: "8", name: "Onion Rings", emoji: "🧅", price: 5.99, category: "Sides", available: true },
-  { id: "9", name: "Caesar Salad", emoji: "🥗", price: 9.99, category: "Salads", available: true },
-  { id: "10", name: "Greek Salad", emoji: "🥗", price: 10.99, category: "Salads", available: true },
-  { id: "11", name: "Pasta Carbonara", emoji: "🍝", price: 12.99, category: "Pasta", available: true },
-  { id: "12", name: "Pasta Bolognese", emoji: "🍝", price: 11.99, category: "Pasta", available: true },
-]
 
 export default function MenuPublish() {
-  const [selectedItems, setSelectedItems] = useState<string[]>(["1", "2", "4", "5", "6", "7", "9", "11"])
+  const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [isPublished, setIsPublished] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const { data: availableMenuItems = [] } = useAdminMenu();
 
   const toggleItem = (id: string) => {
     setSelectedItems((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
   }
 
-  const publishMenu = () => {
-    setIsPublished(true)
-    console.log("Menu published with items:", selectedItems)
-    setTimeout(() => setIsPublished(false), 3000)
+  console.log("chosen one",selectedItems)
+  const publishMenu = async () => {
+    await fetch('/api/publish', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        date: new Date().toISOString(),
+        foodIds: selectedItems,
+        name: "Today's Menu"
+      }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Failed to publish menu');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log('Menu published:', data);
+        setIsPublished(true);
+        setTimeout(() => setIsPublished(false), 3000);
+      })
+      .catch((error) => {
+        console.error('Error publishing menu:', error);
+      });
   }
 
   const categories = [...new Set(availableMenuItems.map((item) => item.category))]
   const publishedItems = availableMenuItems.filter((item) => selectedItems.includes(item.id))
 
   return (
-    <main className="min-h-screen p-8 bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50">
+    <main className="min-h-screen p-8 bg-linear-to-br from-slate-50 via-slate-50 to-blue-50">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -83,7 +85,7 @@ export default function MenuPublish() {
                           backgroundColor: selectedItems.includes(item.id) ? "#eff6ff" : "white",
                         }}
                       >
-                        <div className="flex-shrink-0">
+                        <div className="shrink-0">
                           {selectedItems.includes(item.id) ? (
                             <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
                               <Check className="w-4 h-4 text-white" />
@@ -92,13 +94,12 @@ export default function MenuPublish() {
                             <div className="w-6 h-6 border-2 border-slate-300 rounded-full"></div>
                           )}
                         </div>
-                        <div className="text-2xl">{item.emoji}</div>
                         <div className="flex-1">
                           <p className="font-semibold text-slate-900">{item.name}</p>
-                          <p className="text-sm text-slate-500">${item.price.toFixed(2)}</p>
+                          {/* <p className="text-sm text-slate-500">{item.price.toFixed(2)} BIRR</p> */}
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-slate-900">${item.price.toFixed(2)}</p>
+                          <p className="text-2xl font-bold text-slate-900">{item.price.toFixed(2)} BIRR</p>
                         </div>
                       </div>
                     ))}
@@ -142,7 +143,7 @@ export default function MenuPublish() {
               <button
                 onClick={publishMenu}
                 disabled={selectedItems.length === 0}
-                className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 bg-linear-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Publish Menu Now
               </button>
@@ -158,10 +159,9 @@ export default function MenuPublish() {
                   ) : (
                     publishedItems.map((item) => (
                       <div key={item.id} className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                        <span className="text-xl">{item.emoji}</span>
                         <div className="flex-1">
                           <p className="text-sm font-medium text-slate-900">{item.name}</p>
-                          <p className="text-xs text-slate-500">${item.price.toFixed(2)}</p>
+                          <p className="text-xs text-slate-500">{item.price.toFixed(2)} BIRR</p>
                         </div>
                       </div>
                     ))
