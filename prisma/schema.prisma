@@ -92,17 +92,17 @@ model DailyMenu {
   day    DAY?      @default(MONDAY)
   createdAt DateTime @default(now())
 
-  items  DailyMenuItems[]
+  items DailyMenuItems[]
 }
 
 // This is the "join table" that connects a DailyMenu to a Food
 model DailyMenuItems {
-  id          String @id @default(cuid())
+  id          String    @id @default(cuid())
   dailyMenuId String
   dailyMenu   DailyMenu @relation(fields: [dailyMenuId], references: [id], onDelete: Cascade)
   foodId      String
   food        Foods     @relation(fields: [foodId], references: [id], onDelete: Cascade)
-  
+
   // Ensures a food can only be added once to the same daily menu
   @@unique([dailyMenuId, foodId])
 }
@@ -123,7 +123,8 @@ model Orders {
   userId        String
   foodId        String
   quantity      Int
-  bonoNumber    Int           @default(1)
+  batchId       String
+  bonoNumber    Int?
   orderStatus   OrderStatus   @default(PENDING)
   totalPrice    Float
   paymentStatus PaymentStatus @default(NOTPAID)

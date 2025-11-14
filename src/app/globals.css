@@ -133,3 +133,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes flash-bg {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: #fefcbf;
+  } /* A light yellow flash color */
+}

@@ -3,6 +3,8 @@ import { NextResponse, NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CartItem } from "@/types";
+import Ably from "ably";
+import { createId as cuid } from "@paralleldrive/cuid2";
 
 // --- GET: Fetch the current user's recent orders ---
 export async function GET(request: NextRequest) {
@@ -40,61 +42,54 @@ export async function GET(request: NextRequest) {
 // --- POST: Create new orders from a user's cart ---
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
-
-  if (!session?.user?.id) {
+  if (!session?.user?.id)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   try {
-    const body = (await request.json()) as { items: CartItem[] };
-    const { items } = body;
+    const { items } = (await request.json()) as { items: CartItem[] };
+    if (!items || items.length === 0)
+      return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
 
-    if (!items || items.length === 0) {
-      return NextResponse.json(
-        { error: "Cart items are required" },
-        { status: 400 },
-      );
-    }
-
-    // --- Server-Side Price Calculation and Order Data Preparation ---
-    // This is a CRITICAL security step. We fetch prices from our database,
-    // not the client, to prevent price manipulation.
     const foodIds = items.map((item) => item.id);
     const foodsFromDb = await prisma.foods.findMany({
-      where: {
-        id: { in: foodIds },
-      },
+      where: { id: { in: foodIds } },
     });
-
-    // Create a map for quick price lookups
     const priceMap = new Map(foodsFromDb.map((food) => [food.id, food.price]));
 
-    // A simple, random number for this order batch. In a real app,
-    // this might be a sequential, guaranteed-unique number.
-    const bonoNumber = Math.floor(1000 + Math.random() * 9000);
+    // ✅ FIX: Generate a single batchId for this entire transaction.
+    // This now correctly returns a 'string'.
+    const batchId = cuid();
 
     const ordersData = items.map((item) => {
       const price = priceMap.get(item.id);
-      if (price === undefined) {
-        throw new Error(`Food item with ID ${item.id} not found.`);
-      }
+      if (price === undefined) throw new Error(`Invalid food item: ${item.id}`);
       return {
-        userId: session.user.id,
+        userId: session.user!.id,
         foodId: item.id,
         quantity: item.quantity,
         totalPrice: price * item.quantity,
-        bonoNumber, // All items in this checkout share the same bono number
+        batchId, // This is now a string, which matches the Prisma model.
       };
     });
 
-    // --- Transactional Database Insert ---
-    // Using a transaction ensures that either ALL orders are created, or NONE are.
-    // This prevents a partial order if one of the items fails to save.
-    await prisma.orders.createMany({
-      data: ordersData,
-    });
+    // ✅ FIX: This line no longer causes an error because ordersData has the correct shape.
+    await prisma.orders.createMany({ data: ordersData });
 
-    return NextResponse.json({ success: true, bonoNumber }, { status: 201 });
+    // ✅ Publish the new order to Ably for the cashier
+    if (process.env.ABLY_API_KEY) {
+      const ably = new Ably.Rest(process.env.ABLY_API_KEY);
+      const channel = ably.channels.get("orders");
+      // We fetch the full order details to send to the cashier
+      // ✅ FIX: This query now works because batchId is a string.
+      const newOrderBatch = await prisma.orders.findMany({
+        where: { batchId },
+        include: { food: true, user: true },
+      });
+      await channel.publish("new-order", newOrderBatch);
+    }
+
+    // ✅ FIX: The batchId returned here is also a simple string.
+    return NextResponse.json({ success: true, batchId }, { status: 201 });
   } catch (error) {
     console.error("Error creating order:", error);
     return NextResponse.json(
