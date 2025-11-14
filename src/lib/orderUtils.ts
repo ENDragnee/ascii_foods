@@ -24,7 +24,7 @@ export interface Order {
 // This type represents the raw data coming from our API after JSON parsing
 // Note that createdAt is a string here, which is the cause of the error.
 type DbOrderFromApi = Omit<Orders, "createdAt"> & {
-  createdAt: string;
+  createdAt: string | Date;
   food: Foods;
   user: User;
   isNew?: boolean;

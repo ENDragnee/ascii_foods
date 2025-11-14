@@ -1,10 +1,13 @@
 "use client"
 
-import { useState } from "react"
 import { Volume2, VolumeX } from "lucide-react"
 
-export default function DashboardHeader() {
-  const [soundEnabled, setSoundEnabled] = useState(true)
+interface DashboardHeaderProps {
+  isMuted: boolean;
+  onToggleMute: () => void;
+}
+
+export default function DashboardHeader({ isMuted, onToggleMute }: DashboardHeaderProps) {
 
   return (
     <header className="bg-white shadow-sm border-b border-slate-200">
@@ -23,11 +26,12 @@ export default function DashboardHeader() {
 
           {/* Sound Toggle Button */}
           <button
-            onClick={() => setSoundEnabled(!soundEnabled)}
+            onClick={onToggleMute} // ✅ FIX: Call the function passed down from the parent.
             className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            aria-label={soundEnabled ? "Disable sound" : "Enable sound"}
+            aria-label={!isMuted ? "Mute notifications" : "Unmute notifications"}
           >
-            {soundEnabled ? (
+            {/* ✅ FIX: Use the 'isMuted' prop to decide which icon to display. */}
+            {!isMuted ? (
               <Volume2 className="w-5 h-5 text-slate-600" />
             ) : (
               <VolumeX className="w-5 h-5 text-slate-600" />
