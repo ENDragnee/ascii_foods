@@ -86,12 +86,12 @@ model Foods {
 
 // This model represents the menu for a specific day
 model DailyMenu {
-  id   String   @id @default(cuid())
-  date DateTime @unique @db.Date
-  name String? // Optional name like "Tuesday Lunch Specials"
-  day  DAY?     @default(MONDAY)
-
-  items DailyMenuItems[]
+  id        String           @id @default(cuid())
+  date      DateTime         @db.Date
+  name      String? // Optional name like "Tuesday Lunch Specials"
+  day       DAY?             @default(MONDAY)
+  createdAt DateTime         @default(now())
+  items     DailyMenuItems[]
 }
 
 // This is the "join table" that connects a DailyMenu to a Food
