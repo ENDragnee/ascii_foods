@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'; // ✅ FIX: Import the hook to re
 import { Sidebar } from './sidebar';
 import { BottomBar } from './bottom-bar';
 import { Session } from '@/types';
+import path from 'path';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -15,8 +16,9 @@ export default function MainLayout({ children, session }: MainLayoutProps) {
   const pathname = usePathname();
 
   const isHomePage = pathname === '/';
+  const isAuthPage = pathname === '/auth'
 
-  if (isHomePage) {
+  if (isHomePage || isAuthPage) {
     return <>{children}</>;
   }
 
