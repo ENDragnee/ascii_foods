@@ -30,10 +30,7 @@ export const UserNav = ({ session, asChild = false, children }: UserNavProps) =>
   if (!session?.user) return null;
 
   const handleSignOut = async () => {
-    // This is the correct way to sign out with better-auth
-    // It makes a POST request to the signout endpoint
     await fetch('/api/auth/signout', { method: 'POST' });
-    // After signing out, reload the page to clear state and redirect
     window.location.reload();
   };
 
