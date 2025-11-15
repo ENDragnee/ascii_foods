@@ -2,91 +2,74 @@
 
 import Image from "next/image";
 import { CartItem } from "@/types";
-import { Loader2 } from "lucide-react"; // A nice loading spinner icon
+import { Loader2, X } from "lucide-react";
+import { Button } from "@/components/ui/button"; // Assuming Shadcn UI
 
 interface CartPreviewProps {
   items: CartItem[];
   total: number;
-  isPlacingOrder: boolean; // New prop to indicate loading state
+  isPlacingOrder: boolean;
   onCheckout: () => void;
+  onClose: () => void; // Added a close handler
 }
 
-export default function CartPreview({ items, total, isPlacingOrder, onCheckout }: CartPreviewProps) {
+export default function CartPreview({ items, total, isPlacingOrder, onCheckout, onClose }: CartPreviewProps) {
   return (
-    <div
-      className="fixed bottom-0 left-0 right-0 z-50 backdrop-blur-sm"
-      style={{ background: "rgba(255, 255, 255, 0.8)", borderTop: "2px solid #db1020" }}
-    >
-      <div className="max-w-6xl mx-auto px-4 py-5">
-        <h3 className="text-xl font-bold mb-4" style={{ color: "#27742d" }}>
-          Your Order
-        </h3>
+    // ✅ STYLE: Fully themed with CSS variables
+    <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/80 backdrop-blur-sm">
+      <div className="mx-auto max-w-4xl p-4">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-xl font-bold text-foreground">Your Order</h3>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-5 w-5 text-muted-foreground" />
+          </Button>
+        </div>
 
-        <div className="max-h-48 overflow-y-auto mb-4 space-y-2 pr-2">
+        {/* Item List */}
+        <div className="mb-4 max-h-48 space-y-2 overflow-y-auto pr-2">
           {items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between p-2 rounded-lg"
-              style={{ background: "rgba(39, 116, 45, 0.05)" }}
-            >
+            <div key={item.id} className="flex items-center justify-between rounded-md bg-muted/50 p-2">
               <div className="flex items-center gap-3">
                 <div className="relative h-12 w-12 flex-shrink-0">
                   {item.imageUrl ? (
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.name}
-                      layout="fill"
-                      objectFit="cover"
-                      className="rounded-md"
-                    />
+                    <Image src={item.imageUrl} alt={item.name} layout="fill" objectFit="cover" className="rounded-md" />
                   ) : (
-                    <div className="h-full w-full bg-gray-100 rounded-md flex items-center justify-center">
-                      <span className="text-2xl">🍽️</span>
-                    </div>
+                    <div className="flex h-full w-full items-center justify-center rounded-md bg-muted text-2xl text-muted-foreground">🍽️</div>
                   )}
                 </div>
                 <div>
-                  <p className="font-semibold" style={{ color: "#27742d" }}>
-                    {item.name}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {item.price} ብር × {item.quantity}
+                  <p className="font-semibold text-foreground">{item.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {item.price.toFixed(2)} ETB × {item.quantity}
                   </p>
                 </div>
               </div>
-              <p className="font-bold text-gray-800">
-                {item.price * item.quantity} ብር
+              <p className="font-bold text-foreground">
+                {(item.price * item.quantity).toFixed(2)} ETB
               </p>
             </div>
           ))}
         </div>
 
-        <div
-          className="flex items-center justify-between mb-4 p-4 rounded-lg"
-          style={{ background: "rgba(39, 116, 45, 0.1)" }}
-        >
-          <p className="text-lg font-bold" style={{ color: "#27742d" }}>
-            Total:
-          </p>
-          <p className="text-2xl font-bold" style={{ color: "#db1020" }}>
-            {total} ብር
-          </p>
+        {/* Total Section */}
+        <div className="mb-4 flex items-center justify-between rounded-lg bg-muted p-4">
+          <p className="text-lg font-bold text-foreground">Total:</p>
+          <p className="text-2xl font-bold text-primary">{total.toFixed(2)} ETB</p>
         </div>
 
-        <button
+        {/* Checkout Button */}
+        <Button
+          size="lg"
+          className="w-full text-lg"
           onClick={onCheckout}
-          disabled={isPlacingOrder} // Disable the button while the order is being placed
-          className="w-full py-3 rounded-full font-bold text-lg text-white transition-all hover:shadow-lg hover:scale-105 flex justify-center items-center disabled:opacity-70 disabled:cursor-not-allowed"
-          style={{
-            background: "linear-gradient(135deg, #db1020 0%, #a80c18 100%)",
-          }}
+          disabled={isPlacingOrder}
         >
           {isPlacingOrder ? (
-            <Loader2 className="animate-spin" /> // Show spinner when loading
+            <Loader2 className="animate-spin" />
           ) : (
-            'Checkout 📦'
+            <>Checkout 📦</>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );
