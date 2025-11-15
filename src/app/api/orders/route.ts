@@ -1,7 +1,8 @@
-// /app/api/orders/route.ts
 import { NextResponse, NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+// ✅ FIX: Import the 'Prisma' namespace from your generated client.
+import { Prisma } from "@/generated/prisma/client";
 import { CartItem } from "@/types";
 import Ably from "ably";
 import { createId as cuid } from "@paralleldrive/cuid2";
@@ -14,16 +15,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const date = searchParams.get("date"); // e.g., '2025-11-15'
+
+  // ✅ FIX: Use the specific Prisma type instead of 'any' for full type safety.
+  const whereClause: Prisma.OrdersWhereInput = {
+    userId: session.user.id,
+  };
+
+  if (date && !isNaN(new Date(date).getTime())) {
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+
+    whereClause.createdAt = {
+      gte: startDate,
+      lte: endDate,
+    };
+  }
+
   try {
     const orders = await prisma.orders.findMany({
-      where: {
-        userId: session.user.id,
-      },
-      // Include the related food data for each order so we can display its name and image
+      where: whereClause,
       include: {
         food: true,
       },
-      // Order by the most recent first
       orderBy: {
         createdAt: "desc",
       },
@@ -56,8 +74,6 @@ export async function POST(request: NextRequest) {
     });
     const priceMap = new Map(foodsFromDb.map((food) => [food.id, food.price]));
 
-    // ✅ FIX: Generate a single batchId for this entire transaction.
-    // This now correctly returns a 'string'.
     const batchId = cuid();
 
     const ordersData = items.map((item) => {
@@ -68,19 +84,15 @@ export async function POST(request: NextRequest) {
         foodId: item.id,
         quantity: item.quantity,
         totalPrice: price * item.quantity,
-        batchId, // This is now a string, which matches the Prisma model.
+        batchId,
       };
     });
 
-    // ✅ FIX: This line no longer causes an error because ordersData has the correct shape.
     await prisma.orders.createMany({ data: ordersData });
 
-    // ✅ Publish the new order to Ably for the cashier
     if (process.env.ABLY_API_KEY) {
       const ably = new Ably.Rest(process.env.ABLY_API_KEY);
       const channel = ably.channels.get("orders");
-      // We fetch the full order details to send to the cashier
-      // ✅ FIX: This query now works because batchId is a string.
       const newOrderBatch = await prisma.orders.findMany({
         where: { batchId },
         include: { food: true, user: true },
@@ -88,7 +100,6 @@ export async function POST(request: NextRequest) {
       await channel.publish("new-order", newOrderBatch);
     }
 
-    // ✅ FIX: The batchId returned here is also a simple string.
     return NextResponse.json({ success: true, batchId }, { status: 201 });
   } catch (error) {
     console.error("Error creating order:", error);

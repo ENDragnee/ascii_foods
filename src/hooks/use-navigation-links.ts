@@ -20,7 +20,6 @@ export interface NavLink {
 const USER_LINKS: NavLink[] = [
   { href: "/menu", label: "Menu", icon: Utensils },
   { href: "/orders", label: "My Orders", icon: ShoppingBag },
-  { href: "/history", label: "History", icon: History },
 ];
 
 // ✅ UPDATED: Cashier now has a "Menu" link
