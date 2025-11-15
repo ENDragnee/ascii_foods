@@ -1,13 +1,12 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Providers } from "./providers"
-import { ThemeSwitcher } from "@/components/theme-switcher"
-
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+import MainLayout from "@/components/layout/main-layout"
+import { Session } from "@/types"
+import { auth } from "@/lib/auth"
+import { headers } from "next/headers"; // ✅ FIX: Import headers
 
 export const metadata: Metadata = {
   title: "Fast Food App",
@@ -32,15 +31,20 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const session = await auth.api.getSession({ headers: await headers() });
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased`}>
-        <Providers>{children}<ThemeSwitcher /></Providers>
+        <Providers>
+          <MainLayout session={session as Session}>
+            {children}
+          </MainLayout>
+        </Providers>
         <Analytics />
       </body>
     </html>
