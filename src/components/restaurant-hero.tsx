@@ -10,13 +10,12 @@ export default function RestaurantHero({ onEnter }: { onEnter: () => void }) {
   const [dishIndex, setDishIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // This useEffect handles the typing animation logic. No changes needed here.
   useEffect(() => {
     const currentDish = DISHES[dishIndex]
     const typingSpeed = isDeleting ? 50 : 100
-
     const timeout = setTimeout(() => {
       if (!isDeleting && displayText === currentDish) {
-        // Pause before deleting
         setTimeout(() => setIsDeleting(true), 1500)
       } else if (isDeleting && displayText === "") {
         setIsDeleting(false)
@@ -29,68 +28,60 @@ export default function RestaurantHero({ onEnter }: { onEnter: () => void }) {
         )
       }
     }, typingSpeed)
-
     return () => clearTimeout(timeout)
   }, [displayText, dishIndex, isDeleting])
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 overflow-hidden" style={{ background: "radial-gradient(circle, #f9f5f5 0%, #f0e5e5 100%)" }}>
-      {/* Textured background element */}
+    // ✅ STYLE: The main container now uses the theme's background color.
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background p-4 sm:p-6 md:p-8">
+      {/* Optional: A subtle background pattern */}
       <div className="absolute inset-0 bg-[url('/path-to-your-subtle-food-texture.svg')] opacity-5" />
 
-      {/* Interactive background elements with parallax effect */}
+      {/* ✅ STYLE: Decorative blobs now use the primary and secondary theme colors. */}
       <div
-        className="absolute top-10 left-10 w-32 h-32 rounded-full transition-transform duration-500 transform hover:scale-110"
-        style={{ background: "radial-gradient(circle, #ffd700 0%, transparent 70%)", opacity: 0.5 }}
+        className="absolute top-10 left-10 h-32 w-32 rounded-full opacity-30 transition-transform duration-500 hover:scale-110"
+        style={{ background: "radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)" }}
       />
       <div
-        className="absolute bottom-10 right-10 w-40 h-40 rounded-full transition-transform duration-500 transform hover:scale-110"
-        style={{ background: "radial-gradient(circle, #db1020 0%, transparent 70%)", opacity: 0.5 }}
-      />
-      <div
-        className="absolute top-1/2 left-1/4 w-24 h-24 rounded-full transition-transform duration-500 transform hover:scale-110"
-        style={{ background: "radial-gradient(circle, #27742d 0%, transparent 70%)", opacity: 0.4 }}
+        className="absolute bottom-10 right-10 h-40 w-40 rounded-full opacity-40 transition-transform duration-500 hover:scale-110"
+        style={{ background: "radial-gradient(circle, var(--color-primary) 0%, transparent 70%)" }}
       />
 
-
-      <div className="relative z-10 text-center max-w-3xl">
-        <h1 className="text-6xl md:text-8xl font-extrabold mb-4 tracking-tighter" style={{ color: "#db1020" }}>
+      {/* Main Content */}
+      <div className="relative z-10 max-w-3xl text-center">
+        {/* ✅ STYLE: The main heading now uses the primary theme color. */}
+        <h1 className="mb-4 text-6xl font-extrabold tracking-tighter text-primary md:text-8xl">
           KK yellow
         </h1>
 
-        <p className="text-lg md:text-xl mb-8 opacity-80 leading-relaxed" style={{ lineHeight: 1.6 }}>ትኩስ እጅ የሚያሰቆረጥም ጣእም!!!</p>
+        {/* ✅ STYLE: The tagline uses the muted foreground for a softer appearance. */}
+        <p className="mb-8 text-lg leading-relaxed text-muted-foreground md:text-xl">
+          ትኩስ እጅ የሚያሰቆረጥም ጣእም!!!
+        </p>
 
-        <div className="mb-12 h-24 flex items-center justify-center">
-          <p className="text-3xl md:text-5xl font-light" style={{ color: "#27742d", minHeight: "3rem" }}>
+        {/* ✅ STYLE: The typing text area is cleaner and uses the main foreground color for high contrast. */}
+        <div className="mb-12 flex h-20 items-center justify-center md:h-24">
+          <p className="min-h-[3rem] text-3xl font-light text-foreground md:text-5xl">
             {displayText}
-            <span className="animate-pulse">|</span>
+            <span className="animate-pulse text-primary">|</span>
           </p>
         </div>
 
+        {/* ✅ STYLE: The main call-to-action button is now fully themed. */}
         <button
           onClick={onEnter}
-          className="group relative px-8 py-4 text-lg font-bold rounded-full overflow-hidden transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-yellow-300"
-          style={{
-            background: "linear-gradient(135deg, #ffd700 0%, #db1020 100%)",
-            color: "#f9f5f5",
-            boxShadow: "0 4px 15px 0 rgba(219, 16, 32, 0.75)",
-          }}
+          className="rounded-full bg-primary px-10 py-4 text-lg font-bold text-primary-foreground shadow-lg shadow-primary/40 transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary/50"
         >
-          <span className="relative z-10"> ጀምር</span>
-          <div
-            className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300"
-          />
+          ጀምር (Get Started)
         </button>
 
+        {/* ✅ STYLE: The bouncing emojis now use the secondary color for their background. */}
         <div className="mt-16 flex justify-center gap-4">
           {["🌶️", "🍚", "🥘"].map((emoji, idx) => (
             <div
               key={idx}
-              className="w-16 h-16 rounded-full flex items-center justify-center text-3xl transition-transform duration-300 transform hover:rotate-12 hover:scale-110"
-              style={{
-                background: "rgba(39, 116, 45, 0.1)",
-                animation: `bounce 2s infinite ${idx * 0.2}s`,
-              }}
+              className="flex h-16 w-16 animate-bounce items-center justify-center rounded-full bg-secondary/10 text-3xl transition-transform duration-300 hover:rotate-12 hover:scale-110"
+              style={{ animationDelay: `${idx * 0.2}s`, animationDuration: '2s' }}
             >
               {emoji}
             </div>
