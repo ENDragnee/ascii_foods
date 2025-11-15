@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation'; // ✅ FIX: Import the hook to re
 import { Sidebar } from './sidebar';
 import { BottomBar } from './bottom-bar';
 import { Session } from '@/types';
-import path from 'path';
 
 interface MainLayoutProps {
   children: React.ReactNode;
