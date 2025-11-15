@@ -32,7 +32,8 @@ const CASHIER_LINKS: NavLink[] = [
 // ✅ UPDATED: Admin links are reordered and include "Menu"
 const ADMIN_LINKS: NavLink[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/menu", label: "Manage Menu", icon: Utensils },
+  { href: "/admin/manage-menu", label: "Manage Menu", icon: Utensils },
+  { href: "/menu", label: "Menu", icon: ShoppingBag },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/admin/reports", label: "Reports", icon: FileText },
 ];
