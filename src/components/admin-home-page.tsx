@@ -1,50 +1,35 @@
-"use client"
+// app/admin/page.tsx (or wherever your AdminPage component is located)
+"use client";
 
-import { useState } from "react"
-import { TrendingUp, Clock, AlertTriangle, CheckCircle, Zap } from "lucide-react"
-
-interface OrderStats {
-  newOrdersCount: number
-  preparingCount: number
-  readyCount: number
-  totalOrders: number
-  avgOrderTime: number
-  completionRate: number
-}
+import { TrendingUp, Clock, CheckCircle, Zap } from "lucide-react";
+import { useAdminDashboardStats } from "@/hooks/use-admin"; // Adjust this path based on where you saved the hook
 
 export default function AdminPage() {
-  const [stats, setStats] = useState<OrderStats>({
-    newOrdersCount: 12,
-    preparingCount: 8,
-    readyCount: 5,
-    totalOrders: 25,
-    avgOrderTime: 18,
-    completionRate: 80,
-  })
+  const { data: stats, isLoading, isError, error } = useAdminDashboardStats();
 
-  const [issues, setIssues] = useState([
-    {
-      id: 1,
-      type: "delayed",
-      title: "High Order Backlog",
-      description: "12 new orders waiting. Consider calling another staff member.",
-      severity: "high",
-    },
-    {
-      id: 2,
-      type: "alert",
-      title: "Average Prep Time Increasing",
-      description: "Current avg time: 18 mins (normally 12 mins). Check kitchen capacity.",
-      severity: "medium",
-    },
-    {
-      id: 3,
-      type: "success",
-      title: "Ready for Pickup",
-      description: "5 orders ready. Notify customers via SMS.",
-      severity: "low",
-    },
-  ])
+  if (isLoading) {
+    return (
+      <main className="min-h-screen p-6 flex items-center justify-center">
+        <p className="text-xl font-medium text-slate-700">Loading dashboard data...</p>
+      </main>
+    );
+  }
+
+  if (isError) {
+    return (
+      <main className="min-h-screen p-6 flex items-center justify-center">
+        <p className="text-xl font-medium text-red-600">Error loading stats: {error?.message}</p>
+      </main>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <main className="min-h-screen p-6 flex items-center justify-center">
+        <p className="text-xl font-medium text-slate-700">No dashboard data available.</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen p-6">
@@ -99,7 +84,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Average Order Time */}
+          {/* Average Order Time - This data is not provided by your current GraphQL API, so it's a placeholder */}
           <div className="group p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all border border-slate-200 hover:border-blue-300">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium text-slate-600">Avg Order Time</h3>
@@ -108,7 +93,7 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <p className="text-3xl font-bold text-slate-900">{stats.avgOrderTime}m</p>
+              <p className="text-3xl font-bold text-slate-900">N/A</p>
               <p className="text-sm text-slate-500">Today's average</p>
             </div>
           </div>
@@ -120,14 +105,14 @@ export default function AdminPage() {
           <div className="lg:col-span-2 p-6 bg-white rounded-xl shadow-sm border border-slate-200">
             <h2 className="text-lg font-semibold text-slate-900 mb-6">Today's Performance</h2>
             <div className="space-y-4">
-              {/* Total Orders */}
+              {/* Total Orders Completed Today */}
               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
                 <div>
                   <p className="text-sm text-slate-600">Total Orders Completed</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{stats.totalOrders}</p>
+                  <p className="text-2xl font-bold text-slate-900 mt-1">{stats.totalOrdersCompletedToday}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-green-600 font-medium">+15% from yesterday</p>
+                  <p className="text-sm text-green-600 font-medium">+15% from yesterday</p> {/* This is static as API doesn't provide delta */}
                 </div>
               </div>
 
@@ -142,7 +127,7 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Peak Hours */}
+              {/* Peak Hours (Static - as API doesn't provide it) */}
               <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
                 <div>
                   <p className="text-sm text-slate-600">Peak Hours</p>
@@ -155,7 +140,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* System Status */}
+          {/* System Status (Static - as API doesn't provide it) */}
           <div className="p-6 bg-white rounded-xl shadow-sm border border-slate-200">
             <h2 className="text-lg font-semibold text-slate-900 mb-6">System Status</h2>
             <div className="space-y-3">
@@ -179,46 +164,10 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Issues & Alerts */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-900">Alerts & Insights</h2>
-          <div className="grid grid-cols-1 gap-4">
-            {issues.map((issue) => (
-              <div
-                key={issue.id}
-                className={`p-4 rounded-lg border-l-4 flex items-start gap-4 ${issue.severity === "high"
-                  ? "bg-red-50 border-red-400 border-l-4"
-                  : issue.severity === "medium"
-                    ? "bg-yellow-50 border-yellow-400 border-l-4"
-                    : "bg-green-50 border-green-400 border-l-4"
-                  }`}
-              >
-                <div
-                  className={`p-2 rounded-lg flex-shrink-0 ${issue.severity === "high"
-                    ? "bg-red-100"
-                    : issue.severity === "medium"
-                      ? "bg-yellow-100"
-                      : "bg-green-100"
-                    }`}
-                >
-                  <AlertTriangle
-                    className={`w-5 h-5 ${issue.severity === "high"
-                      ? "text-red-600"
-                      : issue.severity === "medium"
-                        ? "text-yellow-600"
-                        : "text-green-600"
-                      }`}
-                  />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-slate-900">{issue.title}</h3>
-                  <p className="text-sm text-slate-600 mt-1">{issue.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* The "Issues & Alerts" section has been removed as the provided GraphQL API
+            does not return data for alerts or issues. If you wish to re-include this,
+            you would need to extend your GraphQL schema and resolvers to provide such data. */}
       </div>
     </main>
-  )
+  );
 }
