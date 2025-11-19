@@ -28,16 +28,26 @@ const resolvers = {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const newOrdersCount = await context.prisma.orders.count({
+      // Get all unique batches where status is PENDING
+      const pendingBatches = await context.prisma.orders.groupBy({
+        by: ['batchId'],
         where: { orderStatus: "PENDING" },
       });
-      const preparingCount = await context.prisma.orders.count({
+      const newOrdersCount = pendingBatches.length;
+
+      // Get all unique batches where status is ACCEPTED
+      const preparingBatches = await context.prisma.orders.groupBy({
+        by: ['batchId'],
         where: { orderStatus: "ACCEPTED" },
       });
-      const readyCount = await context.prisma.orders.count({
+      const preparingCount = preparingBatches.length;
+
+      // Get all unique batches where status is COMPLETED
+      const readyBatches = await context.prisma.orders.groupBy({
+        by: ['batchId'],
         where: { orderStatus: "COMPLETED" },
       });
-
+      const readyCount = readyBatches.length;
       const totalOrdersCompletedToday = await context.prisma.orders.count({
         where: {
           orderStatus: "COMPLETED",
