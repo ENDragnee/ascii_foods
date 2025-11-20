@@ -83,6 +83,11 @@ export default function MenuExperience() {
   const isAuthenticated = favoriteIds !== null && favoriteIds !== undefined;
   const favoritesSet = useMemo(() => new Set(favoriteIds || []), [favoriteIds]);
 
+
+  const routeToSignIn = () => {
+    router.push("/auth?view=signin")
+  }
+
   // --- Mutations ---
   const toggleFavoriteMutation = useMutation({
     mutationFn: toggleFavorite,
@@ -279,9 +284,12 @@ export default function MenuExperience() {
           total={total}
           onCheckout={handleCheckout}
           isPlacingOrder={placeOrderMutation.isPending}
+          isAuthenticated={isAuthenticated}
+          routeToSignIn={routeToSignIn}
           onClose={() => setShowCart(false)}
         />
-      )}
+      )
+      }
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { PrismaClient, Role } from "../src/generated/prisma/client";
-import cuid from "cuid";
 import { hashPassword } from "../src/lib/password-utils";
 
 const prisma = new PrismaClient();

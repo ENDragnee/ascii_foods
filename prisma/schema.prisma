@@ -86,10 +86,10 @@ model Foods {
 
 // This model represents the menu for a specific day
 model DailyMenu {
-  id     String   @id @default(cuid())
-  date   DateTime @db.Date 
-  name   String?  // Optional name like "Tuesday Lunch Specials"
-  day    DAY?      @default(MONDAY)
+  id        String   @id @default(cuid())
+  date      DateTime @db.Date
+  name      String? // Optional name like "Tuesday Lunch Specials"
+  day       DAY?     @default(MONDAY)
   createdAt DateTime @default(now())
 
   items DailyMenuItems[]
@@ -129,6 +129,7 @@ model Orders {
   totalPrice    Float
   paymentStatus PaymentStatus @default(NOTPAID)
   createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   user User  @relation(fields: [userId], references: [id], onDelete: Restrict)
   food Foods @relation(fields: [foodId], references: [id], onDelete: Restrict)

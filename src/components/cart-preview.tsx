@@ -3,17 +3,20 @@
 import Image from "next/image";
 import { CartItem } from "@/types";
 import { Loader2, X } from "lucide-react";
-import { Button } from "@/components/ui/button"; // Assuming Shadcn UI
+import { Button } from "@/components/ui/button";
 
 interface CartPreviewProps {
   items: CartItem[];
   total: number;
   isPlacingOrder: boolean;
+  isAuthenticated: boolean;
+  routeToSignIn: () => void;
   onCheckout: () => void;
   onClose: () => void; // Added a close handler
 }
 
-export default function CartPreview({ items, total, isPlacingOrder, onCheckout, onClose }: CartPreviewProps) {
+export default function CartPreview({ items, total, isPlacingOrder, isAuthenticated, routeToSignIn, onCheckout, onClose }: CartPreviewProps) {
+
   return (
     // ✅ STYLE: Fully themed with CSS variables
     <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/80 backdrop-blur-sm">
@@ -58,18 +61,34 @@ export default function CartPreview({ items, total, isPlacingOrder, onCheckout, 
         </div>
 
         {/* Checkout Button */}
-        <Button
-          size="lg"
-          className="w-full text-lg"
-          onClick={onCheckout}
-          disabled={isPlacingOrder}
-        >
-          {isPlacingOrder ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <>Checkout 📦</>
-          )}
-        </Button>
+        {isAuthenticated ? (
+
+          <Button
+            size="lg"
+            className="w-full text-lg"
+            onClick={onCheckout}
+            disabled={isPlacingOrder}
+          >
+            {isPlacingOrder ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <>Checkout 📦</>
+            )}
+          </Button>
+        ) : (
+          <Button
+            size="lg"
+            className="w-full text-lg"
+            onClick={routeToSignIn}
+            disabled={isPlacingOrder}
+          >
+            {isPlacingOrder ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <>Sign in to Checkout 📦</>
+            )}
+          </Button>
+        )}
       </div>
     </div>
   );
