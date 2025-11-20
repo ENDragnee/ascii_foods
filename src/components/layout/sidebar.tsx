@@ -9,6 +9,8 @@ import { toggleSidebar } from '@/store/slices/sidebarSlice';
 import { useNavigationLinks, NavLink } from '@/hooks/use-navigation-links';
 import { UserNav } from './user-nav';
 import { Session } from '@/types';
+import { Button } from '../ui/button';
+import { useRouter } from 'next/navigation';
 
 interface SidebarProps {
   session: Session | null;
@@ -22,8 +24,8 @@ const NavItem = ({ link, isOpen }: { link: NavLink; isOpen: boolean }) => {
     <Link href={link.href} passHref>
       <div
         className={`group relative flex items-center gap-4 rounded-lg px-4 py-3 transition-colors ${isActive
-            ? 'bg-primary text-primary-foreground'
-            : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+          ? 'bg-primary text-primary-foreground'
+          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
           }`}
       >
         <link.icon size={20} className="flex-shrink-0" />
@@ -44,6 +46,7 @@ export const Sidebar = ({ session }: SidebarProps) => {
   const isOpen = useSelector((state: RootState) => state.sidebar.isOpen);
   const dispatch = useDispatch();
   const navLinks = useNavigationLinks(session);
+  const router = useRouter();
 
   return (
     <aside
@@ -63,7 +66,7 @@ export const Sidebar = ({ session }: SidebarProps) => {
       </nav>
 
       {/* User Info and Settings Popover */}
-      {session && (
+      {session ? (
         <div className="border-t border-sidebar-border p-4">
           <UserNav session={session} asChild>
             <div className="flex items-center gap-3 cursor-pointer rounded-lg p-2 hover:bg-sidebar-accent">
@@ -79,6 +82,12 @@ export const Sidebar = ({ session }: SidebarProps) => {
             </div>
           </UserNav>
         </div>
+      ) : (
+        <Button
+          className={`flex items-center gap-4 rounded-lg transition-colors bg-primary text-primary-foreground m-4`}
+          onClick={() => router.push("/auth?view=signin")}>
+          Sign In
+        </Button>
       )}
 
       {/* ✅ FIX: The collapse/uncollapse button is now at the bottom */}

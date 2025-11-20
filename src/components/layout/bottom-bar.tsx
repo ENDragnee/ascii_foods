@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, User } from 'lucide-react';
 import { useNavigationLinks } from '@/hooks/use-navigation-links';
 import { Session } from '@/types';
 import { UserNav } from './user-nav'; // Import the UserNav popover
+import { Button } from '../ui/button';
+import { useRouter } from 'next/navigation';
 
 interface BottomBarProps {
   session: Session | null;
@@ -14,6 +16,7 @@ interface BottomBarProps {
 export const BottomBar = ({ session }: BottomBarProps) => {
   const pathname = usePathname();
   const navLinks = useNavigationLinks(session);
+  const router = useRouter();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex h-20 items-center justify-around border-t border-sidebar-border bg-sidebar md:hidden">
@@ -34,7 +37,7 @@ export const BottomBar = ({ session }: BottomBarProps) => {
       })}
 
       {/* ✅ NEW: "More" button that triggers the UserNav popover */}
-      {session && (
+      {session ? (
         <div className="flex h-full w-full flex-col items-center justify-center gap-1 p-2 text-muted-foreground">
           <UserNav session={session} asChild>
             <button className="flex h-full w-full flex-col items-center justify-center gap-1">
@@ -43,6 +46,15 @@ export const BottomBar = ({ session }: BottomBarProps) => {
             </button>
           </UserNav>
         </div>
+      ) : (
+        <Link href={"/auth?view=signin"} key={"signin"} passHref>
+          <div
+            className={`flex h-full w-full flex-col items-center justify-center gap-1 p-2 transition-colors text-primary`}
+          >
+            <User size={24} />
+            <span className="text-xs font-medium">{"Sign In"}</span>
+          </div>
+        </Link>
       )}
     </nav>
   );
