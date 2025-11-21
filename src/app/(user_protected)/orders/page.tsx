@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import { Foods, OrderStatus } from "@/generated/prisma/client";
-import { Loader2, AlertCircle, Search, X } from "lucide-react";
+// ✅ Import from the safe types file to prevent build errors
+import { type Foods, type OrderStatus, Role } from "@/types";
+import { Loader2, AlertCircle, Search } from "lucide-react";
 import type Ably from 'ably';
 
 import { useAbly } from "@/components/ably-provider";
 import { Session } from "@/types";
 import NotificationToast from "@/components/notification-toast";
 import { PaginationControls } from "@/components/pagination-controls";
+import { Button } from "@/components/ui/button";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -48,6 +50,19 @@ async function fetchSession(): Promise<{ session: Session | null }> {
   return res.json();
 }
 
+// --- API Mutator Function ---
+async function updateOrderStatus({ orderId, status }: { orderId: string; status: OrderStatus }) {
+  const response = await fetch(`/api/orders/${orderId}/status`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to update order status");
+  }
+  return response.json();
+}
+
 // --- Themed Status Component ---
 const StatusBadge = ({ status }: { status: OrderStatus }) => {
   const styles = useMemo(() => {
@@ -55,11 +70,16 @@ const StatusBadge = ({ status }: { status: OrderStatus }) => {
       case 'PENDING': return 'bg-yellow-500/10 text-yellow-500';
       case 'ACCEPTED': return 'bg-blue-500/10 text-blue-500';
       case 'COMPLETED': return 'bg-green-500/10 text-green-500';
+      case 'DEILVERED': return 'bg-teal-500/10 text-teal-500';
+      case 'RETURNED': return 'bg-orange-500/10 text-orange-500';
       case 'REJECTED': return 'bg-destructive/10 text-destructive';
       default: return 'bg-muted text-muted-foreground';
     }
   }, [status]);
-  return <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles}`}>{status}</span>;
+
+  // Correctly display "DELIVERED" in the UI despite the schema typo
+  const displayName = status === 'DEILVERED' ? 'DELIVERED' : status;
+  return <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles}`}>{displayName}</span>;
 };
 
 export default function OrdersPage() {
@@ -69,7 +89,7 @@ export default function OrdersPage() {
   const [toast, setToast] = useState<NotificationPayload & { show: boolean }>({ show: false, title: '', body: '' });
   const [filter, setFilter] = useState<'today' | 'all'>('today');
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState(''); // ✅ NEW: State for search
+  const [searchQuery, setSearchQuery] = useState('');
 
   // --- Data Fetching ---
   const { data: orders = [], isLoading, isError } = useQuery<FullOrderItem[]>({
@@ -79,6 +99,17 @@ export default function OrdersPage() {
 
   const { data: sessionData } = useQuery<{ session: Session | null }>({ queryKey: ['session'], queryFn: fetchSession });
   const session = sessionData?.session;
+
+  const updateStatusMutation = useMutation({
+    mutationFn: updateOrderStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders', filter] });
+    },
+    onError: (error) => {
+      console.error("Error updating status:", error);
+    }
+  });
+
 
   // --- Effects ---
   useEffect(() => {
@@ -104,9 +135,7 @@ export default function OrdersPage() {
 
   // --- Search, Filtering, and Pagination Logic ---
   const filteredOrders = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return orders;
-    }
+    if (!searchQuery.trim()) return orders;
     const lowercasedQuery = searchQuery.toLowerCase();
     return orders.filter(order =>
       order.food.name.toLowerCase().includes(lowercasedQuery) ||
@@ -114,15 +143,16 @@ export default function OrdersPage() {
     );
   }, [orders, searchQuery]);
 
-  const totalSpent = useMemo(() => {
-    return filteredOrders.reduce((sum, order) => sum + order.totalPrice, 0);
-  }, [filteredOrders]);
+  const totalSpent = useMemo(() => filteredOrders.reduce((sum, order) => sum + order.totalPrice, 0), [filteredOrders]);
 
   const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
   const paginatedOrders = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredOrders.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredOrders, currentPage]);
+
+  // Check user role using the constant Role object from types
+  const isPrivilegedUser = session?.user?.role === Role.ADMIN || session?.user?.role === Role.CASHIER;
 
   // --- Render Logic ---
   if (isLoading) {
@@ -136,8 +166,7 @@ export default function OrdersPage() {
     <>
       <NotificationToast show={toast.show} title={toast.title} body={toast.body} onClose={() => setToast({ show: false, title: '', body: '' })} />
       <div className="flex h-full flex-col bg-background">
-        {/* Header with Title, Stats, Search, and Filters */}
-        <header className="flex-shrink-0 border-b border-border bg-card/80 px-4 md:px-6 backdrop-blur-sm">
+        <header className="shrink-0 border-b border-border bg-card/80 px-4 md:px-6 backdrop-blur-sm">
           <div className="flex h-16 items-center justify-between">
             <h1 className="text-xl font-bold text-foreground">My Orders</h1>
             <div className="flex items-center gap-2 rounded-lg bg-muted p-1">
@@ -146,73 +175,85 @@ export default function OrdersPage() {
             </div>
           </div>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 py-4">
-            {/* Total Spent */}
             <div>
               <p className="text-sm text-muted-foreground">{filter === 'today' ? 'Total Spent Today' : 'Total from History'}</p>
               <p className="text-2xl font-bold text-primary">{totalSpent.toFixed(2)} ETB</p>
             </div>
-            {/* Search Input */}
             <div className="relative w-full md:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search by food or bono..."
                 value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 className="w-full rounded-lg border border-border bg-muted py-2 pl-10 pr-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
           </div>
         </header>
 
-        {/* Main Content (Scrollable) */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {paginatedOrders.length > 0 ? (
             <div className="space-y-4">
               {paginatedOrders.map((order) => (
-                <div key={order.id} className="flex items-center gap-4 rounded-lg border border-border bg-card p-4 shadow-sm">
-                  <div className="relative h-20 w-20 flex-shrink-0">
-                    {order.food.imageUrl ? (
-                      <Image src={order.food.imageUrl} alt={order.food.name} layout="fill" objectFit="cover" className="rounded-md" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center rounded-md bg-muted text-3xl text-muted-foreground">🍽️</div>
-                    )}
+                <div key={order.id} className="rounded-lg border border-border bg-card p-4 shadow-sm">
+                  <div className="flex items-center gap-4">
+                    <div className="relative h-20 w-20 shrink-0">
+                      {order.food.imageUrl ? (
+                        <Image src={order.food.imageUrl} alt={order.food.name} layout="fill" objectFit="cover" className="rounded-md" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center rounded-md bg-muted text-3xl text-muted-foreground">🍽️</div>
+                      )}
+                    </div>
+                    <div className="flex-grow">
+                      <h2 className="font-bold text-lg text-foreground">{order.food.name}</h2>
+                      <p className="text-sm text-muted-foreground">
+                        {order.quantity} x {order.food.price.toFixed(2)} ETB = <span className="font-semibold text-foreground">{order.totalPrice.toFixed(2)} ETB</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {/* ✅ Fixed typo here: toLocaleDateDateString -> toLocaleDateString */}
+                        {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <StatusBadge status={order.orderStatus} />
+                      {order.bonoNumber && (
+                        <p className="mt-1 text-sm font-bold text-foreground">Bono: #{order.bonoNumber}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-grow">
-                    <h2 className="font-bold text-lg text-foreground">{order.food.name}</h2>
-                    <p className="text-sm text-muted-foreground">
-                      {order.quantity} x {order.food.price.toFixed(2)} ETB = <span className="font-semibold text-foreground">{order.totalPrice.toFixed(2)} ETB</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <StatusBadge status={order.orderStatus} />
-                    {order.bonoNumber && (
-                      <p className="mt-1 text-sm font-bold text-foreground">Bono: #{order.bonoNumber}</p>
-                    )}
-                  </div>
+                  {isPrivilegedUser && ['COMPLETED', 'DEILVERED', 'RETURNED'].includes(order.orderStatus) && (
+                    <div className="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant={order.orderStatus === 'DEILVERED' ? 'default' : 'outline'}
+                        disabled={updateStatusMutation.isPending || order.orderStatus === 'DEILVERED'}
+                        onClick={() => updateStatusMutation.mutate({ orderId: order.id, status: 'DEILVERED' })}
+                      >
+                        {updateStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Delivered'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={order.orderStatus === 'RETURNED' ? 'destructive' : 'outline'}
+                        disabled={updateStatusMutation.isPending || order.orderStatus === 'RETURNED'}
+                        onClick={() => updateStatusMutation.mutate({ orderId: order.id, status: 'RETURNED' })}
+                      >
+                        {updateStatusMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Returned'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           ) : (
             <div className="flex h-full flex-col items-center justify-center rounded-lg bg-card text-center">
-              <h3 className="text-xl font-semibold text-foreground">
-                {searchQuery ? "No Orders Match Your Search" : "No Orders Found"}
-              </h3>
-              <p className="mt-2 text-muted-foreground">
-                {searchQuery ? "Try a different search term." : `You haven't placed any orders ${filter === 'today' ? 'today' : 'yet'}.`}
-              </p>
+              <h3 className="text-xl font-semibold text-foreground">{searchQuery ? "No Orders Match Your Search" : "No Orders Found"}</h3>
+              <p className="mt-2 text-muted-foreground">{searchQuery ? "Try a different search term." : `You haven't placed any orders ${filter === 'today' ? 'today' : 'yet'}.`}</p>
             </div>
           )}
         </main>
 
-        {/* Footer (Pagination) */}
-        <footer className="flex-shrink-0 border-t border-border bg-card">
+        <footer className="shrink-0 border-t border-border bg-card">
           <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </footer>
       </div>

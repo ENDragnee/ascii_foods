@@ -5,6 +5,7 @@ import type { LucideIcon } from "lucide-react";
 import { Search, X } from "lucide-react";
 import OrderCard from "./order-card";
 import type { Order } from "@/lib/orderUtils";
+import { OrderStatus } from "@/generated/prisma/client";
 
 interface KanbanColumnProps {
   title: string;
@@ -12,7 +13,8 @@ interface KanbanColumnProps {
   count: number;
   accentColor: string;
   orders: Order[];
-  onUpdateStatus: (batchId: string, currentStatus: "new" | "preparing" | "ready") => void;
+  // ✅ Updated to accept specific status
+  onUpdateStatus: (batchId: string, newStatus: OrderStatus) => void;
   isActive: boolean;
   onColumnSelect: () => void;
 }
@@ -37,7 +39,6 @@ export default function KanbanColumn({
   );
 
   return (
-    // ✅ STYLE: Uses theme variables for background, border, and shadow.
     <div
       onClick={onColumnSelect}
       className={`flex flex-col bg-card rounded-lg shadow-sm overflow-hidden transition-all duration-500 ease-in-out cursor-pointer border border-border ${isActive ? "col-span-12 md:col-span-8" : "col-span-12 md:col-span-2 hover:shadow-md hover:border-border/80"}`}
@@ -96,7 +97,14 @@ export default function KanbanColumn({
           </div>
         ) : (
           filteredOrders.map((order) => (
-            <OrderCard key={order.id} order={order} accentColor={accentColor} onUpdateStatus={() => onUpdateStatus(order.id, order.status)} isNew={order.isNew} />
+            <OrderCard
+              key={order.id}
+              order={order}
+              accentColor={accentColor}
+              // ✅ Pass the function to update specific status
+              onUpdateStatus={(status) => onUpdateStatus(order.id, status)}
+              isNew={order.isNew}
+            />
           ))
         )}
       </div>

@@ -75,9 +75,22 @@ export default function CashierDashboard() {
       const updatedBatch: FullDbOrder[] = message.data;
       if (updatedBatch.length === 0) return;
       queryClient.setQueryData<FullDbOrder[]>(['cashierOrders'], (oldData = []) => {
+        // We map updates but also filter out statuses that shouldn't be on the board anymore (like Delivered/Returned)
         const updateMap = new Map(updatedBatch.map(item => [item.id, { ...item, createdAt: new Date(item.createdAt) }]));
-        return oldData.map(order => updateMap.get(order.id) || order);
+
+        // Apply updates
+        const updatedList = oldData.map(order => updateMap.get(order.id) || order);
+
+        // Filter out orders that are now Delivered, Returned, or Rejected from the active board view
+        // (Assuming the backend sends the update before removing it from the 'active' fetch list)
+        return updatedList.filter(o =>
+          o.orderStatus !== 'DEILVERED' &&
+          o.orderStatus !== 'RETURNED' &&
+          o.orderStatus !== 'REJECTED'
+        );
       });
+      // Invalidate queries to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ['cashierOrders'] });
     };
 
     channel.subscribe('new-order', handleNewOrder);
@@ -86,6 +99,7 @@ export default function CashierDashboard() {
     return () => channel.unsubscribe();
   }, [ably, queryClient, isMuted]);
 
+  // Flash effect for new items
   useEffect(() => {
     const hasNewItems = dbOrders?.some(o => o.isNew);
     if (hasNewItems) {
@@ -100,17 +114,18 @@ export default function CashierDashboard() {
 
   const updateStatusMutation = useMutation({
     mutationFn: updateOrderStatus,
+    onSuccess: () => {
+      // Optimistic updates are handled via Ably, but we can invalidate here too
+      queryClient.invalidateQueries({ queryKey: ['cashierOrders'] });
+    },
     onError: (error) => {
       console.error("Failed to update order status:", error);
       alert("Error: Could not update the order.");
     },
   });
 
-  const handleUpdateOrderStatus = (batchId: string, currentStatus: "new" | "preparing" | "ready") => {
-    let newStatus: OrderStatus;
-    if (currentStatus === "new") newStatus = "ACCEPTED";
-    else if (currentStatus === "preparing") newStatus = "COMPLETED";
-    else return;
+  // ✅ Updated to accept specific target status
+  const handleUpdateOrderStatus = (batchId: string, newStatus: OrderStatus) => {
     updateStatusMutation.mutate({ batchId, newStatus });
   };
 
@@ -127,15 +142,10 @@ export default function CashierDashboard() {
   }
 
   return (
-    // The top-level div is already `flex flex-col` from the parent layout
-    // `h-full` here makes it fill the vertical space provided by MainLayout.
     <div className="flex flex-col h-full bg-background">
       <DashboardHeader isMuted={isMuted} onToggleMute={() => setIsMuted(!isMuted)} />
 
-      {/* `flex-1` and `min-h-0` are key here. `flex-1` makes this div grow to fill space,
-          and `min-h-0` allows its children to scroll properly within the flex container. */}
       <main className="flex-1 p-4 md:p-6 min-h-0">
-        {/* The `h-full` class on the grid makes it expand to the full height of the main area. */}
         <div className="grid grid-cols-12 gap-4 md:gap-6 h-full">
           <KanbanColumn
             title="New Orders"
