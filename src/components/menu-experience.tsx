@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSelector, useDispatch } from "react-redux";
-import { LayoutGrid, List, Search, Loader2, AlertCircle, ShoppingCart } from "lucide-react";
+import { LayoutGrid, List, Search, Loader2, AlertCircle, ShoppingCart, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import MenuCard from "./menu-card";
@@ -27,10 +27,21 @@ const CATEGORIES = [
   { key: "JUICE", label: "Juice", emoji: "🍹" },
 ];
 
-async function fetchMenus(): Promise<MenuItem[]> {
-  const response = await fetch("/api/menus");
+// Define the structure for a single daily menu item from the API
+interface DailyMenu {
+  id: string;
+  date: string;
+  items: {
+    food: MenuItem;
+  }[];
+}
+
+// Fetches the daily menus from the new API endpoint
+async function fetchDailyMenus(): Promise<DailyMenu[]> {
+  const response = await fetch("/api/menus/latest-menu");
   if (!response.ok) throw new Error("Network response was not ok");
-  return response.json();
+  const data = await response.json();
+  return data.menus || []; // Ensure we always have an array
 }
 
 async function fetchFavorites(): Promise<string[] | null> {
@@ -50,30 +61,42 @@ async function toggleFavorite(foodId: string) {
   return response.json();
 }
 
+// Helper function to format date strings for display
+const formatDateForDisplay = (dateString: string) => {
+  const date = new Date(dateString);
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(today.getDate() + 1);
+
+  if (date.toDateString() === today.toDateString()) return "Today";
+  if (date.toDateString() === tomorrow.toDateString()) return "Tomorrow";
+
+  return new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric' }).format(date);
+};
+
 export default function MenuExperience() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
 
-  // ✅ LIVE session state
   const { session } = useSession(null);
   const isAuthenticated = !!session?.user;
 
-  // Redux state
   const cartItemsMap = useSelector((state: RootState) => state.cart.items);
   const cartSize = useSelector(selectCartSize);
   const viewMode = useSelector((state: RootState) => state.viewMode.mode);
 
-  // Local state
+  // --- Local state ---
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
-  // --- Fetch menus ---
-  const { data: menuItems = [], isLoading: isMenuLoading, isError: isMenuError } = useQuery<MenuItem[]>({
-    queryKey: ["menus"],
-    queryFn: fetchMenus,
+  // --- Fetch daily menus ---
+  const { data: dailyMenus = [], isLoading: isMenuLoading, isError: isMenuError } = useQuery<DailyMenu[]>({
+    queryKey: ["dailyMenus"],
+    queryFn: fetchDailyMenus,
   });
 
   // --- Fetch favorites (reactive to session) ---
@@ -96,16 +119,37 @@ export default function MenuExperience() {
       queryClient.setQueryData(["favorites"], newFavorites);
       return { previousFavorites };
     },
-    onError: (err, _foodId, context) => {
+    onError: (_err, _foodId, context) => { // Fixed: Unused `err` variable
       if (context?.previousFavorites !== undefined) queryClient.setQueryData(["favorites"], context.previousFavorites);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["favorites"] }),
   });
 
+  // --- Derived state for the currently active menu ---
+  // This removes the need for a useEffect to reset state, resolving the cascading render error.
+  const activeMenu = useMemo(() => {
+    if (!dailyMenus || dailyMenus.length === 0) return null;
+    // Find the menu matching the selected date, or default to the first one.
+    const foundMenu = dailyMenus.find(menu => menu.date === selectedDate);
+    return foundMenu || dailyMenus[0];
+  }, [dailyMenus, selectedDate]);
+
+  const menuItems = useMemo(() => {
+    return activeMenu ? activeMenu.items.map(item => item.food) : [];
+  }, [activeMenu]);
+
+
   // --- Handlers ---
   const handleToggleFavorite = (foodId: string) => {
     if (!isAuthenticated) setShowLoginPrompt(true);
     else toggleFavoriteMutation.mutate(foodId);
+  };
+
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date);
+    setCurrentPage(1); // Reset pagination
+    setSearchQuery(""); // Reset search
+    setSelectedCategory("all"); // Reset category
   };
 
   const handleCategorySelect = (categoryKey: string) => {
@@ -155,15 +199,13 @@ export default function MenuExperience() {
 
   return (
     <div className="flex h-full flex-col bg-background">
-      {/* Login prompt */}
       <LoginPromptModal isOpen={showLoginPrompt} onClose={() => setShowLoginPrompt(false)} />
 
-      {/* Header */}
-      <header className="flex-shrink-0 border-b border-border bg-card/80 backdrop-blur-sm">
+      <header className="shrink-0 border-b border-border bg-card/80 backdrop-blur-sm"> {/* Fixed: `flex-shrink-0` to `shrink-0` */}
         <div className="flex h-16 items-center justify-between px-4">
           {isSearchVisible ? (
             <div className="flex w-full items-center gap-2">
-              <Search className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+              <Search className="h-5 w-5 shrink-0 text-muted-foreground" /> {/* Fixed: `flex-shrink-0` to `shrink-0` */}
               <input
                 type="text"
                 placeholder="Search for a dish..."
@@ -207,16 +249,29 @@ export default function MenuExperience() {
         </div>
       </header>
 
-      {/* Categories */}
-      <div className="flex-shrink-0 border-b border-border bg-card/50">
+      {/* Date and Category Filters */}
+      <div className="shrink-0 border-b border-border bg-card/50"> {/* Fixed: `flex-shrink-0` to `shrink-0` */}
+        {dailyMenus.length > 1 && (
+          <div className="flex items-center gap-2 overflow-x-auto p-3 no-scrollbar border-b border-border">
+            <CalendarIcon className="h-5 w-5 shrink-0 text-muted-foreground ml-1" /> {/* Fixed: `flex-shrink-0` to `shrink-0` */}
+            {dailyMenus.map((menu) => (
+              <button
+                key={menu.id}
+                onClick={() => handleDateChange(menu.date)}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-300 ${activeMenu?.date === menu.date ? "bg-primary text-primary-foreground shadow" : "bg-card text-foreground hover:bg-muted"}`}
+              >
+                {formatDateForDisplay(menu.date)}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex gap-2 overflow-x-auto p-3 no-scrollbar">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.key}
               onClick={() => handleCategorySelect(cat.key)}
               disabled={cat.key === "favorites" && isFavoritesLoading}
-              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-300 disabled:opacity-50 ${selectedCategory === cat.key ? "bg-primary text-primary-foreground shadow" : "bg-card text-foreground hover:bg-muted"
-                }`}
+              className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors duration-300 disabled:opacity-50 ${selectedCategory === cat.key ? "bg-primary text-primary-foreground shadow" : "bg-card text-foreground hover:bg-muted"}`}
             >
               <span className="mr-2">{cat.emoji}</span>
               {cat.label}
@@ -225,9 +280,14 @@ export default function MenuExperience() {
         </div>
       </div>
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto p-4">
-        {paginatedItems.length > 0 ? (
+        {dailyMenus.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <p className="mb-4 text-4xl">🗓️</p>
+            <h3 className="text-2xl font-bold text-foreground">No Menu Available</h3>
+            <p className="mt-2 text-muted-foreground">Please check back later for today&apos;s menu.</p>
+          </div>
+        ) : paginatedItems.length > 0 ? (
           viewMode === "grid" ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {paginatedItems.map((item) => (
@@ -268,10 +328,11 @@ export default function MenuExperience() {
         )}
       </main>
 
-      {/* Pagination */}
-      <footer className="flex-shrink-0 border-t border-border bg-card">
-        <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-      </footer>
+      {totalPages > 1 && (
+        <footer className="shrink-0 border-t border-border bg-card"> {/* Fixed: `flex-shrink-0` to `shrink-0` */}
+          <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+        </footer>
+      )}
     </div>
   );
 }

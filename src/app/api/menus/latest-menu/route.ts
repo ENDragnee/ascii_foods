@@ -48,7 +48,7 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json(
       { message: "Failed to fetch menus", error },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

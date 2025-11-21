@@ -6,11 +6,6 @@ import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
 import { MenuItem } from "@/types";
 
-// --- Reusable Sub-Components for a Cleaner & More Maintainable Dashboard ---
-
-/**
- * A themed card for displaying a key statistic.
- */
 const StatCard = ({ title, value, subtitle, icon: Icon, colorClass }: {
   title: string;
   value: string | number;
@@ -71,9 +66,6 @@ const TopSellersCard = () => {
   );
 };
 
-/**
- * A themed card to display the items on today's menu.
- */
 const TodaysMenuCard = () => {
   const { data: menuItems, isLoading } = useTodaysMenu();
   return (
