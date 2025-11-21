@@ -6,7 +6,7 @@ import Link from "next/link"
 import { SignInForm } from "@/components/signin-form"
 
 interface SignInViewProps {
-  onSubmit: (e: React.FormEvent) => Promise<boolean>
+  onSubmit: (e: React.FormEvent) => Promise<void>
   isLoading: boolean
   handleSocial: (provider: "google" | "apple") => Promise<void>
   error?: string

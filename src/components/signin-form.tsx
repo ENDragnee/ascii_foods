@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-import { useQueryClient } from "@tanstack/react-query"; // ✅ Import useQueryClient
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +13,7 @@ export function SignInForm({
   handleSocial,
   error = "",
 }: {
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>; // ✅ Changed to return a boolean
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
   isLoading?: boolean;
   handleSocial: (provider: "google" | "apple") => Promise<void>;
   error?: string;

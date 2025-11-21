@@ -7,8 +7,6 @@ import { useRouter } from "next/navigation";
 import { signIn, signInSocial, signUp } from "@/lib/actions/auth-actions";
 import { SignInView } from "@/components/auth-sign-in-view";
 import { SignUpView } from "@/components/auth-sign-up-view";
-import { AuthErrorDisplay } from "@/components/auth-error-display";
-import { boolean } from "better-auth";
 
 interface AuthClientPageProps {
   isSignIn: boolean;
