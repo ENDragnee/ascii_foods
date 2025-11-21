@@ -14,25 +14,13 @@ export function SignInForm({
   handleSocial,
   error = "",
 }: {
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<boolean>; // ✅ Changed to return a boolean
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>; // ✅ Changed to return a boolean
   isLoading?: boolean;
   handleSocial: (provider: "google" | "apple") => Promise<void>;
   error?: string;
 }) {
-  const queryClient = useQueryClient(); // ✅ Get the query client instance
-
-  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    const success = await onSubmit(event);
-
-    // ✅ If the onSubmit function (from the parent) returns true...
-    if (success) {
-      // ✅ Invalidate the session query to trigger a global refetch.
-      await queryClient.invalidateQueries({ queryKey: ['session'] });
-    }
-  };
-
   return (
-    <form onSubmit={handleFormSubmit} className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6">
       {error && <AuthErrorDisplay error={error} />}
       <div className="space-y-4">
         <div className="space-y-2">

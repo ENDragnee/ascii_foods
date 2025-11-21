@@ -8,7 +8,6 @@ import { RootState } from '@/store';
 import { toggleSidebar } from '@/store/slices/sidebarSlice';
 import { useNavigationLinks, NavLink } from '@/hooks/use-navigation-links';
 import { UserNav } from './user-nav';
-// ✅ NEW: Import the useSession hook
 import { useSession } from '@/hooks/use-session';
 import { Button } from '../ui/button';
 import { useRouter } from 'next/navigation';

@@ -33,7 +33,6 @@ async function fetchMenus(): Promise<MenuItem[]> {
 
 interface MainLayoutProps {
   children: React.ReactNode;
-  // This prop is now the *initial* session from the server
   session: Session | null;
 }
 
@@ -97,7 +96,6 @@ export default function MainLayout({ children, session: initialSession }: MainLa
 
   return (
     <div className="flex h-screen w-full bg-background">
-      {/* The Sidebar and BottomBar now receive the live, reactive session object */}
       <Sidebar />
 
       <main className="flex-1 flex flex-col min-w-0 md:pb-0 pb-20">
@@ -106,7 +104,6 @@ export default function MainLayout({ children, session: initialSession }: MainLa
 
       <BottomBar session={session} />
 
-      {/* CartPreview now correctly reflects the live authentication state */}
       {isCartVisible && cartItemsArray.length > 0 && (
         <CartPreview
           items={cartItemsArray}

@@ -8,7 +8,12 @@ interface SessionResponse {
 }
 
 async function fetchSession(): Promise<SessionResponse> {
-  const res = await fetch("/api/session");
+  const res = await fetch("/api/session", {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+  });
+
   if (!res.ok) {
     throw new Error("Failed to fetch session");
   }
@@ -16,16 +21,17 @@ async function fetchSession(): Promise<SessionResponse> {
 }
 
 export const useSession = (initialSession: Session | null) => {
-  const { data, isLoading, isError } = useQuery<SessionResponse>({
+  const { data, isLoading, isError } = useQuery<SessionResponse, Error>({
     queryKey: ["session"],
     queryFn: fetchSession,
-    initialData: { session: initialSession },
-    staleTime: 5 * 60 * 1000, // Session data is considered fresh for 5 minutes
-    refetchOnWindowFocus: true, // Refreshes session when the user returns to the tab
+    initialData: initialSession ? { session: initialSession } : undefined,
+    staleTime: 5 * 60 * 1000, // 5 min
+    refetchOnWindowFocus: true,
+    refetchOnMount: initialSession ? false : "always",
   });
 
   return {
-    session: data?.session,
+    session: data?.session ?? null,
     isLoading,
     isError,
   };

@@ -1,51 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { SignInForm } from "@/components/signin-form"; // Adjust path as needed
+import { SignInForm } from "@/components/signin-form";
 import { useRouter } from "next/navigation";
+import { useEmailAuth } from "@/hooks/use-email-auth";
 
 interface LoginPromptModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function LoginPromptModal({ isOpen, onClose }: LoginPromptModalProps) {
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+export default function LoginPromptModal({
+  isOpen,
+  onClose,
+}: LoginPromptModalProps) {
   const router = useRouter();
+  const { handleEmailAuth, error, isLoading } = useEmailAuth();
 
   if (!isOpen) return null;
 
-  // This function is passed to the SignInForm
-  const handleSignInSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<boolean> => {
-    event.preventDefault();
-    setIsLoading(true);
-    setError("");
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    const success = await handleEmailAuth(e);
 
-    const formData = new FormData(event.currentTarget);
-    const body = Object.fromEntries(formData.entries());
-
-    try {
-      const response = await fetch("/api/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Sign-in failed");
-      }
-
-      // On success, close the modal. The form will handle invalidation.
+    if (success) {
       onClose();
-      return true; // ✅ Return true on success
-
-    } catch (error) {
-      console.log(error)
-      return false; // ✅ Return false on failure
-    } finally {
-      setIsLoading(false);
+      router.refresh(); // optional, mostly for server-rendered state
     }
   };
 
@@ -67,7 +45,7 @@ export default function LoginPromptModal({ isOpen, onClose }: LoginPromptModalPr
           You need to be logged in to use this feature.
         </p>
         <SignInForm
-          onSubmit={handleSignInSubmit}
+          onSubmit={handleFormSubmit}
           handleSocial={handleSocialSignIn}
           isLoading={isLoading}
           error={error}
