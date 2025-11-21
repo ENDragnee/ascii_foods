@@ -1,6 +1,6 @@
 import { createYoga, createSchema } from "graphql-yoga";
 import { prisma } from "@/lib/prisma";
-import { PrismaClient, Prisma, DAY } from "@/generated/prisma/client"; // Import DAY enum
+import { PrismaClient, Prisma, DAY } from "@/generated/prisma/client";
 import { OrderStatus } from "@/types";
 
 interface GraphQLContext {
@@ -126,7 +126,6 @@ const getDayEnum = (date: Date): DAY => {
 // 2. Define your Resolvers
 const resolvers = {
   Query: {
-    // ... (getAdminDashboardStats remains the same) ...
     getAdminDashboardStats: async (
       _: unknown,
       __: unknown,
@@ -210,7 +209,6 @@ const resolvers = {
       };
     },
 
-    // ... (getOrders and getFoods remain the same) ...
     getOrders: async (
       _: unknown,
       args: {
@@ -307,9 +305,7 @@ const resolvers = {
 
       return recentMenus.map((menu) => ({
         id: menu.id,
-        // Convert Date to ISO string for GraphQL
         date: menu.date.toISOString(),
-        // If name is null, fallback to formatted date string
         name:
           menu.name ||
           new Date(menu.date).toLocaleDateString("en-US", {
@@ -318,7 +314,6 @@ const resolvers = {
             day: "numeric",
           }),
         itemCount: menu.items.length,
-        // Map the join table back to just the food items
         items: menu.items.map((i) => i.food),
       }));
     },
@@ -393,22 +388,15 @@ const resolvers = {
       return { ordersOverTime, topSellingFoods, topRevenueFoods, topCustomers };
     },
 
-    // ✅ UPDATED: getTopSellingItems (All Time / Broad)
     getTopSellingItems: async (
       _: unknown,
       __: unknown,
       context: GraphQLContext,
     ) => {
-      // NOTE: We removed the date filter to ensure data shows up ("All Time Best Sellers").
-      // To restrict to today, uncomment the lines below:
-      // const today = new Date();
-      // today.setHours(0, 0, 0, 0);
-
       const sales = await context.prisma.orders.groupBy({
         by: ["foodId"],
         where: {
           orderStatus: "COMPLETED",
-          // createdAt: { gte: today }, // Uncomment to restrict to today
         },
         _sum: {
           quantity: true,
@@ -436,34 +424,26 @@ const resolvers = {
       }));
     },
 
-    // ✅ UPDATED: getTodaysMenu (With Fallback)
     getTodaysMenu: async (_: unknown, __: unknown, context: GraphQLContext) => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // 1. Determine the current day enum (e.g., FRIDAY)
       const currentDayEnum = getDayEnum(new Date());
 
-      // 2. Try to find a menu for TODAY'S DATE first.
-      // 3. If not found, fall back to the generic DAY OF WEEK menu.
-      // We use findFirst with orderBy to prioritize the specific date over the generic day if both exist.
       const dailyMenu = await context.prisma.dailyMenu.findFirst({
         where: {
           OR: [
-            // Option A: Matches specific date (2025-11-21)
             {
               date: {
                 gte: today,
                 lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
               },
             },
-            // Option B: Matches day of week (FRIDAY)
             {
               day: currentDayEnum,
             },
           ],
         },
-        // Priority: Date > Day (though in this logic, date is usually more specific)
         orderBy: {
           date: "desc",
         },
@@ -483,7 +463,11 @@ const resolvers = {
   },
 };
 
-const { handleRequest } = createYoga({
+// ------------------------------------------------------------------
+// FIX IS HERE:
+// ------------------------------------------------------------------
+
+const yoga = createYoga({
   schema: createSchema({
     typeDefs,
     resolvers,
@@ -499,4 +483,12 @@ const { handleRequest } = createYoga({
   },
 });
 
-export { handleRequest as GET, handleRequest as POST };
+interface NextRouteContext {
+  params: Promise<Record<string, string | string[] | undefined>>;
+}
+
+const handle = (request: Request, context: NextRouteContext) => {
+  return yoga.fetch(request, context);
+};
+
+export { handle as GET, handle as POST };

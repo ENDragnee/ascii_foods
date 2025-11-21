@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { PrismaClient, Role } from "../src/generated/prisma/client";
 import { hashPassword } from "../src/lib/password-utils";
+import { createId as cuid } from "@paralleldrive/cuid2";
 
 const prisma = new PrismaClient();
 
