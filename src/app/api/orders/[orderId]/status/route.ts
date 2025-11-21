@@ -11,10 +11,13 @@ function isValidOrderStatus(status: OrderStatus): status is OrderStatus {
   return Object.values(OrderStatus).includes(status);
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { orderId: string } },
-) {
+interface RouteParams {
+  params: Promise<{
+    orderId: string;
+  }>;
+}
+
+export async function PUT(request: Request, { params }: RouteParams) {
   const session = await requireAuth(); // Secure the endpoint
 
   // Ensure user is an admin or cashier
@@ -22,7 +25,7 @@ export async function PUT(
     return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
   }
 
-  const { orderId } = params;
+  const { orderId } = await params;
   if (!orderId) {
     return NextResponse.json(
       { message: "Order ID is required" },
