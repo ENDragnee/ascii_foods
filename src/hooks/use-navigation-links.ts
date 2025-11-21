@@ -7,6 +7,7 @@ import {
   ShoppingBag,
   History,
   Sandwich,
+  Image,
 } from "lucide-react";
 import { Session } from "@/types"; // Use your application's Session type
 
@@ -36,6 +37,7 @@ const ADMIN_LINKS: NavLink[] = [
   { href: "/admin/manage-menu", label: "Manage Menu", icon: Utensils },
   { href: "/menu", label: "Menu", icon: ShoppingBag },
   { href: "/admin/manage-foods", label: "Manage Foods", icon: Sandwich },
+  { href: "/admin/manage-media", label: "Manage Media", icon: Image },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/admin/reports", label: "Reports", icon: FileText },
 ];
