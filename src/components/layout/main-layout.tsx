@@ -12,6 +12,7 @@ import CartPreview from '../cart-preview';
 import { Session, CartItem, MenuItem } from '@/types';
 import { RootState } from '@/store';
 import { hideCart, clearCart } from '@/store/slices/cartSlice';
+import { useSession } from '@/hooks/use-session';
 
 // API functions moved here as MainLayout now handles checkout
 async function createOrder(items: CartItem[]) {
@@ -32,17 +33,23 @@ async function fetchMenus(): Promise<MenuItem[]> {
 
 interface MainLayoutProps {
   children: React.ReactNode;
+  // This prop is now the *initial* session from the server
   session: Session | null;
 }
 
-export default function MainLayout({ children, session }: MainLayoutProps) {
+export default function MainLayout({ children, session: initialSession }: MainLayoutProps) {
   const pathname = usePathname();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const router = useRouter();
 
+  // ✅ FIX: Use the hook to get the LIVE session state.
+  // The initialSession prop is passed to prevent a flicker on the first load.
+  const { session } = useSession(initialSession);
+
   // Get cart state from Redux
   const { isVisible: isCartVisible, items: cartItemsMap } = useSelector((state: RootState) => state.cart);
+  // ✅ FIX: The isAuthenticated flag now correctly uses the live session data.
   const isAuthenticated = !!session?.user;
 
   // --- Data Fetching & Mutations (Now in the Layout) ---
@@ -90,7 +97,8 @@ export default function MainLayout({ children, session }: MainLayoutProps) {
 
   return (
     <div className="flex h-screen w-full bg-background">
-      <Sidebar session={session} />
+      {/* The Sidebar and BottomBar now receive the live, reactive session object */}
+      <Sidebar />
 
       <main className="flex-1 flex flex-col min-w-0 md:pb-0 pb-20">
         {children}
@@ -98,7 +106,7 @@ export default function MainLayout({ children, session }: MainLayoutProps) {
 
       <BottomBar session={session} />
 
-      {/* ✅ FIX: CartPreview is now rendered here, at the top level of the layout */}
+      {/* CartPreview now correctly reflects the live authentication state */}
       {isCartVisible && cartItemsArray.length > 0 && (
         <CartPreview
           items={cartItemsArray}

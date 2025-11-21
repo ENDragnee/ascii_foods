@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSelector, useDispatch } from "react-redux";
-import { LayoutGrid, List, Search, Loader2, AlertCircle, ShoppingCart } from "lucide-react";
+import { LayoutGrid, List, Search, Loader2, AlertCircle, ShoppingCart, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import MenuCard from "./menu-card";
@@ -14,6 +14,8 @@ import { RootState } from "@/store";
 import { MenuItem } from "@/types";
 import { addItem, removeItem, showCart, selectCartSize } from "@/store/slices/cartSlice";
 import { toggleViewMode } from "@/store/slices/viewModeSlice";
+// ✅ NEW: Import the custom hook to get live session data on the client.
+import { useSession } from "@/hooks/use-session";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -54,12 +56,17 @@ export default function MenuExperience() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
 
-  // ✅ FIX: Read cart state directly from the Redux store
+  // ✅ FIX: Use the hook to get the LIVE session state.
+  // We pass `null` because this component is purely client-side and has no initial server prop.
+  const { session } = useSession(null);
+  const isAuthenticated = !!session?.user;
+
+  // Read cart and view mode state from Redux
   const cartItemsMap = useSelector((state: RootState) => state.cart.items);
   const cartSize = useSelector(selectCartSize);
   const viewMode = useSelector((state: RootState) => state.viewMode.mode);
 
-  // --- Component-local State (cart state is removed) ---
+  // --- Component-local State ---
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,12 +75,17 @@ export default function MenuExperience() {
 
   // --- Data Fetching with React Query ---
   const { data: menuItems = [], isLoading: isMenuLoading, isError: isMenuError } = useQuery<MenuItem[]>({ queryKey: ["menus"], queryFn: fetchMenus });
-  const { data: favoriteIds, isLoading: isFavoritesLoading } = useQuery<string[] | null>({ queryKey: ["favorites"], queryFn: fetchFavorites, staleTime: 5 * 60 * 1000 });
 
-  const isAuthenticated = favoriteIds !== null && favoriteIds !== undefined;
+  // This query now correctly enables/disables based on the LIVE session state.
+  const { data: favoriteIds, isLoading: isFavoritesLoading } = useQuery<string[] | null>({
+    queryKey: ["favorites"],
+    queryFn: fetchFavorites,
+    enabled: isAuthenticated, // Use the reactive isAuthenticated flag
+  });
+
   const favoritesSet = useMemo(() => new Set(favoriteIds || []), [favoriteIds]);
 
-  // --- Mutations (placeOrderMutation is removed as it's now in MainLayout) ---
+  // --- Mutation for Toggling Favorites ---
   const toggleFavoriteMutation = useMutation({
     mutationFn: toggleFavorite,
     onMutate: async (foodId: string) => {
@@ -89,17 +101,27 @@ export default function MenuExperience() {
   });
 
   // --- Event Handlers ---
-  const handleToggleFavorite = (foodId: string) => { if (!isAuthenticated) setShowLoginPrompt(true); else toggleFavoriteMutation.mutate(foodId); };
+  const handleToggleFavorite = (foodId: string) => {
+    if (!isAuthenticated) setShowLoginPrompt(true);
+    else toggleFavoriteMutation.mutate(foodId);
+  };
+
   const handleCategorySelect = (categoryKey: string) => {
     setCurrentPage(1);
     setSearchQuery("");
     if (categoryKey === "favorites") {
-      if (isFavoritesLoading) return;
+      if (isFavoritesLoading && !isAuthenticated) return; // Prevent click while checking auth
       if (!isAuthenticated) setShowLoginPrompt(true);
       else setSelectedCategory("favorites");
-    } else { setSelectedCategory(categoryKey); }
+    } else {
+      setSelectedCategory(categoryKey);
+    }
   };
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => { setSearchQuery(e.target.value); setCurrentPage(1); };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
 
   // --- Filtering & Pagination Logic ---
   const filteredItems = useMemo(() => {
@@ -204,8 +226,6 @@ export default function MenuExperience() {
       <footer className="flex-shrink-0 border-t border-border bg-card">
         <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
       </footer>
-
-      {/* ❌ CartPreview and its logic are now correctly handled by the MainLayout */}
     </div>
   );
 }

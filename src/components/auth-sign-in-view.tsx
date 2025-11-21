@@ -6,7 +6,7 @@ import Link from "next/link"
 import { SignInForm } from "@/components/signin-form"
 
 interface SignInViewProps {
-  onSubmit: (e: React.FormEvent) => Promise<void>
+  onSubmit: (e: React.FormEvent) => Promise<boolean>
   isLoading: boolean
   handleSocial: (provider: "google" | "apple") => Promise<void>
   error?: string
@@ -67,7 +67,7 @@ export function SignInView({ onSubmit, isLoading, handleSocial, error = "" }: Si
           <SignInForm onSubmit={onSubmit} isLoading={isLoading} handleSocial={handleSocial} error={error} />
 
           <div className="mt-8 text-center text-sm">
-            <span className="text-muted-foreground">Don't have an account? </span>
+            <span className="text-muted-foreground">{"Don't have an account?"}</span>
             <Link
               href="/auth?view=signup"
               className="font-medium hover:underline underline-offset-4"

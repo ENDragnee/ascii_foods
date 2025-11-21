@@ -8,41 +8,41 @@ import { RootState } from '@/store';
 import { toggleSidebar } from '@/store/slices/sidebarSlice';
 import { useNavigationLinks, NavLink } from '@/hooks/use-navigation-links';
 import { UserNav } from './user-nav';
-import { Session } from '@/types';
+// ✅ NEW: Import the useSession hook
+import { useSession } from '@/hooks/use-session';
 import { Button } from '../ui/button';
 import { useRouter } from 'next/navigation';
-
-interface SidebarProps {
-  session: Session | null;
-}
 
 const NavItem = ({ link, isOpen }: { link: NavLink; isOpen: boolean }) => {
   const pathname = usePathname();
   const isActive = pathname === link.href;
 
   return (
-    <Link href={link.href} passHref>
-      <div
-        className={`group relative flex items-center gap-4 rounded-lg px-4 py-3 transition-colors ${isActive
-          ? 'bg-primary text-primary-foreground'
-          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-          }`}
-      >
-        <link.icon size={20} className="flex-shrink-0" />
-        <span className={`whitespace-nowrap transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+    <Link href={link.href} passHref
+      className={`group relative flex items-center gap-4 rounded-lg px-4 py-3 transition-colors ${isActive
+        ? 'bg-primary text-primary-foreground'
+        : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+        }`}
+    >
+      <link.icon size={20} className="srink-0" />
+      <span className={`whitespace-nowrap transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+        {link.label}
+      </span>
+      {!isOpen && (
+        <div className="absolute left-full z-10 ml-4 hidden rounded-md bg-card px-2 py-1 text-sm font-medium text-card-foreground shadow-md group-hover:block">
           {link.label}
-        </span>
-        {!isOpen && (
-          <div className="absolute left-full z-10 ml-4 hidden rounded-md bg-card px-2 py-1 text-sm font-medium text-card-foreground shadow-md group-hover:block">
-            {link.label}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </Link>
   );
 };
 
-export const Sidebar = ({ session }: SidebarProps) => {
+export const Sidebar = () => { // ❌ No props needed
+  // ✅ FIX: Use the hook directly inside the component
+  // We pass `null` as the initial value, which is fine because the server-rendered
+  // value will be replaced by the live client-side value from the hook.
+  const { session } = useSession(null);
+
   const isOpen = useSelector((state: RootState) => state.sidebar.isOpen);
   const dispatch = useDispatch();
   const navLinks = useNavigationLinks(session);
@@ -73,9 +73,7 @@ export const Sidebar = ({ session }: SidebarProps) => {
               <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-accent-foreground">
                 <User size={20} />
               </div>
-              <div
-                className={`flex flex-col overflow-hidden transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
-              >
+              <div className={`flex flex-col overflow-hidden transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
                 <p className="truncate text-sm font-semibold text-sidebar-foreground">{session.user.name}</p>
                 <p className="truncate text-xs text-muted-foreground">{session.user.email}</p>
               </div>
@@ -83,14 +81,17 @@ export const Sidebar = ({ session }: SidebarProps) => {
           </UserNav>
         </div>
       ) : (
-        <Button
-          className={`flex items-center gap-4 rounded-lg transition-colors bg-primary text-primary-foreground m-4`}
-          onClick={() => router.push("/auth?view=signin")}>
-          Sign In
-        </Button>
+        isOpen && ( // Only show the button if the sidebar is open
+          <div className="p-4">
+            <Button
+              className="w-full"
+              onClick={() => router.push("/auth?view=signin")}>
+              Sign In
+            </Button>
+          </div>
+        )
       )}
 
-      {/* ✅ FIX: The collapse/uncollapse button is now at the bottom */}
       <div className="border-t border-sidebar-border p-4">
         <button
           onClick={() => dispatch(toggleSidebar())}

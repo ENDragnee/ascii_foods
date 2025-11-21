@@ -21,16 +21,13 @@ export const BottomBar = ({ session }: BottomBarProps) => {
       {navLinks.map((link) => {
         const isActive = pathname === link.href;
         return (
-          <Link href={link.href} key={link.href} passHref legacyBehavior>
-            <a
-              // ✅ FIX: Added `flex-1` to make this item grow and take up equal space.
-              className={`flex h-full flex-1 flex-col items-center justify-center gap-1 p-2 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              <link.icon size={24} />
-              <span className="text-xs font-medium">{link.label}</span>
-            </a>
+          <Link href={link.href} key={link.href} passHref
+            className={`flex h-full flex-1 flex-col items-center justify-center gap-1 p-2 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            aria-current={isActive ? 'page' : undefined}
+          >
+            <link.icon size={24} />
+            <span className="text-xs font-medium">{link.label}</span>
           </Link>
         );
       })}
@@ -47,14 +44,11 @@ export const BottomBar = ({ session }: BottomBarProps) => {
           </UserNav>
         </div>
       ) : (
-        <Link href={"/auth?view=signin"} key={"signin"} passHref legacyBehavior>
-          <a
-            // ✅ FIX: Added `flex-1` to this link as well.
-            className="flex h-full flex-1 flex-col items-center justify-center gap-1 p-2 transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <User size={24} />
-            <span className="text-xs font-medium">Sign In</span>
-          </a>
+        <Link href={"/auth?view=signin"} key={"signin"}
+          className="flex h-full flex-1 flex-col items-center justify-center gap-1 p-2 transition-colors text-muted-foreground hover:text-foreground"
+        >
+          <User size={24} />
+          <span className="text-xs font-medium">Sign In</span>
         </Link>
       )}
     </nav>
