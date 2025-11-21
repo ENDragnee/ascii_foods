@@ -1,16 +1,95 @@
 import { createYoga, createSchema } from "graphql-yoga";
 import { prisma } from "@/lib/prisma";
-// ✅ FIX: Import the PrismaClient type to define our context.
-import type { PrismaClient } from "@/generated/prisma/client";
+import { PrismaClient, Prisma, DAY } from "@/generated/prisma/client"; // Import DAY enum
+import { OrderStatus } from "@/types";
 
-// ✅ FIX: Define a specific type for our GraphQL context.
-// This tells TypeScript that our context will always have a `prisma` property.
 interface GraphQLContext {
   prisma: PrismaClient;
 }
 
 // 1. Define your GraphQL Schema
 const typeDefs = `
+  type FoodItem {
+    id: String!
+    name: String!
+    price: Float!
+    imageUrl: String
+  }
+
+  type UserInfo {
+    id: String!
+    name: String!
+    email: String!
+  }
+
+  type OrderItem {
+    id: String!
+    food: FoodItem!
+    quantity: Int!
+    totalPrice: Float!
+    createdAt: String!
+    bonoNumber: Int
+    orderStatus: String!
+    user: UserInfo!
+  }
+  
+  type PaginatedOrders {
+    orders: [OrderItem!]!
+    totalCount: Int!
+  }
+
+  type PaginatedFoods {
+    foods: [FoodItem!]!
+    totalCount: Int!
+  }
+
+  type TimeDataPoint {
+    time: String!
+    value: Int!
+  }
+
+  type RankedFoodItem {
+    food: FoodItem!
+    value: Float!
+  }
+
+  type RankedUser {
+    user: UserInfo!
+    value: Float!
+  }
+
+  type AnalyticsData {
+    ordersOverTime: [TimeDataPoint!]!
+    topSellingFoods: [RankedFoodItem!]!
+    topRevenueFoods: [RankedFoodItem!]!
+    topCustomers: [RankedUser!]!
+  }
+  
+  type TopSeller {
+    food: FoodItem!
+    sales: Int!
+  }
+
+  type Query {
+    getAdminDashboardStats: AdminDashboardStats!
+    
+    getOrders(
+      skip: Int!, 
+      take: Int!, 
+      search: String, 
+      startDate: String, 
+      endDate: String, 
+      status: String,
+      sortBy: String,
+      sortOrder: String
+    ): PaginatedOrders!
+
+    getFoods(skip: Int!, take: Int!): PaginatedFoods!
+    getAdminAnalytics: AnalyticsData!
+    getTopSellingItems: [TopSeller!]!
+    getTodaysMenu: [FoodItem!]!
+  }
+
   type AdminDashboardStats {
     newOrdersCount: Int!
     preparingCount: Int!
@@ -19,41 +98,36 @@ const typeDefs = `
     completionRate: Float!
     averageCompletionTime: Float!
   }
-
-  type FoodItem {
-    id: String!
-    name: String!
-    imageUrl: String
-  }
-
-  type TopSeller {
-    food: FoodItem!
-    sales: Int!
-  }
-
-  type Query {
-    getAdminDashboardStats: AdminDashboardStats!
-    getTopSellingItems: [TopSeller!]!
-    getTodaysMenu: [FoodItem!]!
-  }
 `;
+
+// Helper to get Prisma Enum DAY from JS Date
+const getDayEnum = (date: Date): DAY => {
+  const days: DAY[] = [
+    "SUNDAY",
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
+  ];
+  return days[date.getDay()];
+};
 
 // 2. Define your Resolvers
 const resolvers = {
   Query: {
-    // ✅ FIX: Type the resolver arguments and prefix unused ones with '_'.
+    // ... (getAdminDashboardStats remains the same) ...
     getAdminDashboardStats: async (
-      _parent: unknown,
-      _args: unknown,
+      _: unknown,
+      __: unknown,
       context: GraphQLContext,
     ) => {
-      // --- Date Setup ---
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      // --- Order Counts by Status ---
       const pendingBatches = await context.prisma.orders.groupBy({
         by: ["batchId"],
         where: { orderStatus: "PENDING" },
@@ -67,18 +141,12 @@ const resolvers = {
         where: { orderStatus: "COMPLETED" },
       });
 
-      const newOrdersCount = pendingBatches.length;
-      const preparingCount = preparingBatches.length;
-      const readyCount = readyBatches.length;
-
-      // --- Today's Performance Metrics ---
       const totalOrdersCompletedToday = await context.prisma.orders.count({
         where: {
           orderStatus: "COMPLETED",
           updatedAt: { gte: today, lt: tomorrow },
         },
       });
-
       const totalOrdersToday = await context.prisma.orders.count({
         where: { createdAt: { gte: today, lt: tomorrow } },
       });
@@ -88,9 +156,7 @@ const resolvers = {
           ? (totalOrdersCompletedToday / totalOrdersToday) * 100
           : 0;
 
-      // --- Average Completion Time Calculation ---
       let averageCompletionTime = 0;
-
       const lastCompletedBatches = await context.prisma.orders.findMany({
         where: { orderStatus: "COMPLETED" },
         distinct: ["batchId"],
@@ -102,10 +168,7 @@ const resolvers = {
       if (lastCompletedBatches.length > 0) {
         let totalCompletionTimeMs = 0;
         let processedBatchCount = 0;
-        // ✅ FIX: Explicitly type the parameter 'b' to resolve the implicit 'any' error.
-        const batchIds = lastCompletedBatches.map(
-          (b: { batchId: string }) => b.batchId,
-        );
+        const batchIds = lastCompletedBatches.map((b) => b.batchId);
 
         for (const batchId of batchIds) {
           const firstItem = await context.prisma.orders.findFirst({
@@ -116,48 +179,194 @@ const resolvers = {
             where: { batchId },
             orderBy: { updatedAt: "desc" },
           });
-
           if (firstItem && lastUpdatedItem) {
-            const timeDifference =
+            totalCompletionTimeMs +=
               lastUpdatedItem.updatedAt.getTime() -
               firstItem.createdAt.getTime();
-            totalCompletionTimeMs += timeDifference;
             processedBatchCount++;
           }
         }
-
         if (processedBatchCount > 0) {
           averageCompletionTime =
             totalCompletionTimeMs / processedBatchCount / (1000 * 60);
         }
       }
-
-      // --- Return the final stats object ---
       return {
-        newOrdersCount,
-        preparingCount,
-        readyCount,
+        newOrdersCount: pendingBatches.length,
+        preparingCount: preparingBatches.length,
+        readyCount: readyBatches.length,
         totalOrdersCompletedToday,
         completionRate: parseFloat(completionRate.toFixed(1)),
         averageCompletionTime: parseFloat(averageCompletionTime.toFixed(1)),
       };
     },
 
-    getTopSellingItems: async (
-      _parent: unknown,
-      _args: unknown,
+    // ... (getOrders and getFoods remain the same) ...
+    getOrders: async (
+      _: unknown,
+      args: {
+        skip: number;
+        take: number;
+        search?: string;
+        startDate?: string;
+        endDate?: string;
+        status?: string;
+        sortBy?: string;
+        sortOrder?: "asc" | "desc";
+      },
       context: GraphQLContext,
     ) => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const {
+        skip,
+        take,
+        search,
+        startDate,
+        endDate,
+        status,
+        sortBy,
+        sortOrder,
+      } = args;
+      const where: Prisma.OrdersWhereInput = {};
+
+      if (startDate || endDate) {
+        where.createdAt = {};
+        if (startDate) where.createdAt.gte = new Date(startDate);
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          where.createdAt.lte = end;
+        }
+      }
+      if (status && status !== "ALL") where.orderStatus = status as OrderStatus;
+      if (search) {
+        where.OR = [
+          { user: { name: { contains: search, mode: "insensitive" } } },
+          { food: { name: { contains: search, mode: "insensitive" } } },
+        ];
+      }
+      const orderBy: Prisma.OrdersOrderByWithRelationInput = {};
+      if (sortBy) {
+        if (sortBy === "user") orderBy.user = { name: sortOrder || "asc" };
+        else if (sortBy === "food") orderBy.food = { name: sortOrder || "asc" };
+        else
+          (orderBy as unknown as Record<string, Prisma.SortOrder>)[sortBy] =
+            sortOrder || "desc";
+      } else {
+        orderBy.createdAt = "desc";
+      }
+      const [orders, totalCount] = await Promise.all([
+        context.prisma.orders.findMany({
+          skip,
+          take,
+          where,
+          orderBy,
+          include: { food: true, user: true },
+        }),
+        context.prisma.orders.count({ where }),
+      ]);
+      return { orders, totalCount };
+    },
+
+    getFoods: async (
+      _: unknown,
+      { skip, take }: { skip: number; take: number },
+      context: GraphQLContext,
+    ) => {
+      const [foods, totalCount] = await Promise.all([
+        context.prisma.foods.findMany({ skip, take, orderBy: { name: "asc" } }),
+        context.prisma.foods.count(),
+      ]);
+      return { foods, totalCount };
+    },
+
+    // ... (getAdminAnalytics remains the same) ...
+    getAdminAnalytics: async (
+      _: unknown,
+      __: unknown,
+      context: GraphQLContext,
+    ) => {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+
+      const dailyOrders = await context.prisma.orders.groupBy({
+        by: ["createdAt"],
+        where: { createdAt: { gte: sevenDaysAgo } },
+        _count: { _all: true },
+        orderBy: { createdAt: "asc" },
+      });
+      const ordersMap = new Map<string, number>();
+      dailyOrders.forEach((order) => {
+        const day = order.createdAt.toISOString().split("T")[0];
+        ordersMap.set(day, (ordersMap.get(day) || 0) + order._count._all);
+      });
+      const ordersOverTime = Array.from(ordersMap.entries()).map(
+        ([time, value]) => ({ time, value }),
+      );
+
+      const topSellers = await context.prisma.orders.groupBy({
+        by: ["foodId"],
+        _sum: { quantity: true },
+        orderBy: { _sum: { quantity: "desc" } },
+        take: 5,
+      });
+      const topSellerFoods = await context.prisma.foods.findMany({
+        where: { id: { in: topSellers.map((f) => f.foodId) } },
+      });
+      const topSellingFoods = topSellers.map((seller) => ({
+        food: topSellerFoods.find((f) => f.id === seller.foodId),
+        value: seller._sum.quantity || 0,
+      }));
+
+      const topRevenue = await context.prisma.orders.groupBy({
+        by: ["foodId"],
+        _sum: { totalPrice: true },
+        orderBy: { _sum: { totalPrice: "desc" } },
+        take: 5,
+      });
+      const topRevenueFoodsData = await context.prisma.foods.findMany({
+        where: { id: { in: topRevenue.map((f) => f.foodId) } },
+      });
+      const topRevenueFoods = topRevenue.map((item) => ({
+        food: topRevenueFoodsData.find((f) => f.id === item.foodId),
+        value: item._sum.totalPrice || 0,
+      }));
+
+      const topSpenders = await context.prisma.orders.groupBy({
+        by: ["userId"],
+        _sum: { totalPrice: true },
+        orderBy: { _sum: { totalPrice: "desc" } },
+        take: 5,
+      });
+      const topUsers = await context.prisma.user.findMany({
+        where: { id: { in: topSpenders.map((u) => u.userId) } },
+        select: { id: true, name: true },
+      });
+      const topCustomers = topSpenders.map((spender) => ({
+        user: topUsers.find((u) => u.id === spender.userId),
+        value: spender._sum.totalPrice || 0,
+      }));
+
+      return { ordersOverTime, topSellingFoods, topRevenueFoods, topCustomers };
+    },
+
+    // ✅ UPDATED: getTopSellingItems (All Time / Broad)
+    getTopSellingItems: async (
+      _: unknown,
+      __: unknown,
+      context: GraphQLContext,
+    ) => {
+      // NOTE: We removed the date filter to ensure data shows up ("All Time Best Sellers").
+      // To restrict to today, uncomment the lines below:
+      // const today = new Date();
+      // today.setHours(0, 0, 0, 0);
 
       const sales = await context.prisma.orders.groupBy({
         by: ["foodId"],
         where: {
           orderStatus: "COMPLETED",
-          createdAt: { gte: today },
+          // createdAt: { gte: today }, // Uncomment to restrict to today
         },
-        // Sum the quantity of each food item sold
         _sum: {
           quantity: true,
         },
@@ -166,7 +375,7 @@ const resolvers = {
             quantity: "desc",
           },
         },
-        take: 3, // Get the top 3 sellers
+        take: 3,
       });
 
       if (sales.length === 0) return [];
@@ -184,20 +393,36 @@ const resolvers = {
       }));
     },
 
-    getTodaysMenu: async (
-      _parent: unknown,
-      _args: unknown,
-      context: GraphQLContext,
-    ) => {
+    // ✅ UPDATED: getTodaysMenu (With Fallback)
+    getTodaysMenu: async (_: unknown, __: unknown, context: GraphQLContext) => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
+      // 1. Determine the current day enum (e.g., FRIDAY)
+      const currentDayEnum = getDayEnum(new Date());
+
+      // 2. Try to find a menu for TODAY'S DATE first.
+      // 3. If not found, fall back to the generic DAY OF WEEK menu.
+      // We use findFirst with orderBy to prioritize the specific date over the generic day if both exist.
       const dailyMenu = await context.prisma.dailyMenu.findFirst({
         where: {
-          date: {
-            gte: today,
-            lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
-          },
+          OR: [
+            // Option A: Matches specific date (2025-11-21)
+            {
+              date: {
+                gte: today,
+                lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+              },
+            },
+            // Option B: Matches day of week (FRIDAY)
+            {
+              day: currentDayEnum,
+            },
+          ],
+        },
+        // Priority: Date > Day (though in this logic, date is usually more specific)
+        orderBy: {
+          date: "desc",
         },
         include: {
           items: {
@@ -215,13 +440,11 @@ const resolvers = {
   },
 };
 
-// 3. Create the Yoga server
 const { handleRequest } = createYoga({
   schema: createSchema({
     typeDefs,
     resolvers,
   }),
-  // ✅ FIX: Provide a typed context function.
   context: (): GraphQLContext => ({
     prisma,
   }),
