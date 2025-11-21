@@ -16,6 +16,14 @@ const typeDefs = `
     imageUrl: String
   }
 
+  type RecentMenu {
+    id: String!
+    date: String!
+    name: String
+    itemCount: Int!
+    items: [FoodItem!]!
+  }
+
   type UserInfo {
     id: String!
     name: String!
@@ -72,6 +80,7 @@ const typeDefs = `
 
   type Query {
     getAdminDashboardStats: AdminDashboardStats!
+    getRecentMenus: [RecentMenu!]!
     
     getOrders(
       skip: Int!, 
@@ -279,7 +288,41 @@ const resolvers = {
       return { foods, totalCount };
     },
 
-    // ... (getAdminAnalytics remains the same) ...
+    getRecentMenus: async (
+      _: unknown,
+      __: unknown,
+      context: GraphQLContext,
+    ) => {
+      const recentMenus = await context.prisma.dailyMenu.findMany({
+        take: 7,
+        orderBy: { date: "desc" },
+        include: {
+          items: {
+            include: {
+              food: true,
+            },
+          },
+        },
+      });
+
+      return recentMenus.map((menu) => ({
+        id: menu.id,
+        // Convert Date to ISO string for GraphQL
+        date: menu.date.toISOString(),
+        // If name is null, fallback to formatted date string
+        name:
+          menu.name ||
+          new Date(menu.date).toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "short",
+            day: "numeric",
+          }),
+        itemCount: menu.items.length,
+        // Map the join table back to just the food items
+        items: menu.items.map((i) => i.food),
+      }));
+    },
+
     getAdminAnalytics: async (
       _: unknown,
       __: unknown,

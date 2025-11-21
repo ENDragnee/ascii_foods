@@ -1,188 +1,147 @@
-"use client"
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchFoods } from "@/services/fetcher";
+import { MenuItem } from "@/types";
+import { toast } from "sonner";
 
-import { useState, useEffect } from "react"
-import { useDispatch, useSelector } from "react-redux"
-import { useAdminMenu } from "@/hooks/use-admin"
-import { usePublishedMenus } from "@/hooks/use-published-menus"
-import { setMenuForDate, clearAllMenus } from "@/store/slices/menuSlice"
-import type { RootState, AppDispatch } from "@/store"
+// --- GraphQL Queries ---
 
-export interface MenuItemData {
-  date: string
-  foodIds: string[]
-  name: string
-  day: string
+const GET_RECENT_MENUS_QUERY = `
+  query GetRecentMenus {
+    getRecentMenus {
+      id
+      date
+      name
+      items {
+        id
+      }
+    }
+  }
+`;
+
+// --- Types ---
+
+interface StoredMenu {
+  date: Date;
+  items: string[];
 }
 
+interface RecentMenuResponse {
+  id: string;
+  date: string;
+  name: string;
+  items: { id: string }[];
+}
+
+interface PublishPayload {
+  date: string;
+  items: string[];
+}
+
+// --- Helper: Safe Date Conversion ---
+// This ensures that if you pick "Nov 25", it sends "Nov 25 UTC"
+// regardless of your local timezone.
+const getAsUTCString = (date: Date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const day = date.getDate();
+
+  // Create a date that is 00:00:00 UTC for the selected day
+  const utcDate = new Date(Date.UTC(year, month, day));
+  return utcDate.toISOString();
+};
+
+// --- API Fetchers ---
+
+const fetchRecentMenus = async (): Promise<RecentMenuResponse[]> => {
+  const response = await fetch("/api/graphql", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: GET_RECENT_MENUS_QUERY }),
+  });
+  const result = await response.json();
+  if (result.errors) throw new Error(result.errors[0].message);
+  return result.data.getRecentMenus;
+};
+
+// API call for single daily menu
+const publishDailyMenuApi = async (items: string[]) => {
+  // ✅ FIX: Use getAsUTCString to ensure "Today" doesn't slip to "Yesterday" in UTC
+  const datePayload = getAsUTCString(new Date());
+
+  const response = await fetch("/api/menus/publish", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items, date: datePayload }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to publish menu");
+  }
+  return response.json();
+};
+
+// API call for multiple future menus
+const publishMultipleMenusApi = async (menus: PublishPayload[]) => {
+  const response = await fetch("/api/menus/publish", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ menus }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to publish menus");
+  }
+  return response.json();
+};
+
+// --- Main Hook ---
+
 export default function useMenuPublish() {
-  const [selectedItems, setSelectedItems] = useState<string[]>([])
-  const [isPublished, setIsPublished] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
-  const [menuMode, setMenuMode] = useState<"daily" | "future">("daily")
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date())
+  const queryClient = useQueryClient();
 
-  const { data: availableMenuItems = [] } = useAdminMenu()
-  const { menus: publishedMenus, mutate: refetchPublishedMenus } = usePublishedMenus()
-  
-  const dispatch = useDispatch<AppDispatch>()
-  const storedMenus = useSelector((state: RootState) => state.menu.menus)
+  // -- State --
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [isPublished, setIsPublished] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [menuMode, setMenuMode] = useState<"daily" | "future">("daily");
 
-  const toggleItem = (id: string) => {
-    setSelectedItems((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    )
-  }
+  // Calendar State
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [storedMenus, setStoredMenus] = useState<StoredMenu[]>([]);
 
-  const handleDateClick = (day: number) => {
-    const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
-    setSelectedDate(newDate)
+  // -- Data Fetching --
 
-    const dateKey = newDate.toISOString().split('T')[0]
-    
-    // First check Redux state for unsaved menus
-    const existingMenu = storedMenus.find((menu) => menu.date === dateKey)
-    if (existingMenu) {
-      setSelectedItems(existingMenu.foodIds)
-    } else {
-      // Then check published menus from API
-      const publishedMenu = publishedMenus.find((menu) => {
-        const menuDate = new Date(menu.date).toISOString().split('T')[0]
-        return menuDate === dateKey
-      })
-      if (publishedMenu) {
-        setSelectedItems(publishedMenu.foodIds)
-      } else {
-        setSelectedItems([])
-      }
-    }
-  }
-  
-  const saveScheduledMenuToState = () => {
-    const dateKey = selectedDate.toISOString().split('T')[0]
-    const dayName = selectedDate.toLocaleDateString('en-US', { weekday: 'long' })
+  const { data: availableMenuItems = [] } = useQuery<MenuItem[]>({
+    queryKey: ["admin-menu-items"],
+    queryFn: fetchFoods,
+  });
 
-    dispatch(
-      setMenuForDate({
-        date: dateKey,
-        foodIds: selectedItems,
-        name: `Menu for ${selectedDate.toLocaleDateString()}`,
-        day: dayName,
-      })
-    )
+  const { data: rawRecentMenus = [] } = useQuery<RecentMenuResponse[]>({
+    queryKey: ["admin-recent-menus"],
+    queryFn: fetchRecentMenus,
+    staleTime: 5 * 60 * 1000,
+  });
 
-    setIsSaved(true)
-    setTimeout(() => setIsSaved(false), 3000)
-  }
+  const previousMenus = useMemo(() => {
+    return rawRecentMenus.map((menu) => ({
+      id: menu.id,
+      name: menu.name || new Date(menu.date).toLocaleDateString(),
+      items: menu.items.map((i) => i.id),
+    }));
+  }, [rawRecentMenus]);
 
-  const publishMenu = async () => {
-    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+  // -- Computed Values --
 
-    let menuToPublish: MenuItemData
+  const categories = useMemo(() => {
+    return Array.from(new Set(availableMenuItems.map((item) => item.category)));
+  }, [availableMenuItems]);
 
-    if (menuMode === "daily") {
-      const today = new Date()
-      const dateKey = today.toISOString().split('T')[0]
-
-      menuToPublish = {
-        date: dateKey,
-        foodIds: selectedItems,
-        name: "Today's Menu",
-        day: dayNames[today.getDay()],
-      }
-
-      dispatch(setMenuForDate(menuToPublish))
-
-      try {
-        const res = await fetch("/api/publish", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ menus: [menuToPublish] }),
-        })
-        if (!res.ok) throw new Error("Failed to publish menu")
-        const data = await res.json()
-        console.log("Menu published:", data[0])
-        
-        await refetchPublishedMenus()
-        
-        setIsPublished(true)
-        setTimeout(() => setIsPublished(false), 3000)
-      } catch (error) {
-        console.error("Error publishing menu:", error)
-      }
-    } else {
-      return
-    }
-  }
-
-  const publishMultipleMenus = async () => {
-    const menusToPublish = storedMenus.map((menu) => ({
-      date: menu.date,
-      foodIds: menu.foodIds,
-      name: menu.name,
-      day: menu.day,
-    }))
-
-    try {
-      const res = await fetch("/api/publish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ menus: menusToPublish }),
-      })
-      if (!res.ok) throw new Error("Failed to publish menus")
-      const data = await res.json()
-      console.log("Menus published:", data)
-      
-      dispatch(clearAllMenus())
-      await refetchPublishedMenus()
-      
-      setIsPublished(true)
-      setTimeout(() => setIsPublished(false), 3000)
-    } catch (error) {
-      console.error("Error publishing menus:", error)
-    }
-  }
-
-  const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
-
-  const getFirstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay()
-
-  const hasMenuOnDate = (day: number): boolean => {
-    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
-    const dateKey = date.toISOString().split('T')[0]
-    
-    // Check Redux state
-    const hasReduxMenu = storedMenus.some((menu) => menu.date === dateKey && menu.foodIds.length > 0)
-    
-    // Check published menus
-    const hasPublishedMenu = publishedMenus.some((menu) => {
-      const menuDate = new Date(menu.date).toISOString().split('T')[0]
-      return menuDate === dateKey && menu.foodIds.length > 0
-    })
-    
-    return hasReduxMenu || hasPublishedMenu
-  }
-
-  const isSelectedDate = (day: number): boolean => {
-    return (
-      selectedDate.getDate() === day &&
-      selectedDate.getMonth() === currentMonth.getMonth() &&
-      selectedDate.getFullYear() === currentMonth.getFullYear()
-    )
-  }
-
-  const isToday = (day: number): boolean => {
-    const today = new Date()
-    return (
-      day === today.getDate() &&
-      currentMonth.getMonth() === today.getMonth() &&
-      currentMonth.getFullYear() === today.getFullYear()
-    )
-  }
-
-  const categories = [...new Set(availableMenuItems.map((item) => item.category))]
-  const publishedItems = availableMenuItems.filter((item) => selectedItems.includes(item.id))
+  const publishedItems = useMemo(() => {
+    return availableMenuItems.filter((item) => selectedItems.includes(item.id));
+  }, [availableMenuItems, selectedItems]);
 
   const monthNames = [
     "January",
@@ -197,12 +156,141 @@ export default function useMenuPublish() {
     "October",
     "November",
     "December",
-  ]
-  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+  ];
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  // -- Helper Functions --
+
+  const getDaysInMonth = (date: Date) =>
+    new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const getFirstDayOfMonth = (date: Date) =>
+    new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  const isSameDate = (date1: Date, date2: Date) => {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
+  };
+
+  const hasMenuOnDate = (day: number) => {
+    const checkDate = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      day,
+    );
+    return storedMenus.some((menu) =>
+      isSameDate(new Date(menu.date), checkDate),
+    );
+  };
+
+  const isSelectedDate = (day: number) => {
+    const checkDate = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      day,
+    );
+    return isSameDate(selectedDate, checkDate);
+  };
+
+  const isToday = (day: number) => {
+    const today = new Date();
+    const checkDate = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      day,
+    );
+    return isSameDate(today, checkDate);
+  };
+
+  // -- Actions --
+
+  const toggleItem = (itemId: string) => {
+    setSelectedItems((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId],
+    );
+    setIsPublished(false);
+  };
+
+  const loadMenu = (items: string[]) => {
+    setSelectedItems(items);
+    toast.success("Menu layout loaded!");
+  };
+
+  const handleDateClick = (day: number) => {
+    const newDate = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      day,
+    );
+    setSelectedDate(newDate);
+
+    const existingMenu = storedMenus.find((menu) =>
+      isSameDate(new Date(menu.date), newDate),
+    );
+    if (existingMenu) {
+      setSelectedItems(existingMenu.items);
+    } else {
+      setSelectedItems([]);
+    }
+  };
+
+  const saveScheduledMenuToState = () => {
+    setStoredMenus((prev) => {
+      const filtered = prev.filter(
+        (menu) => !isSameDate(new Date(menu.date), selectedDate),
+      );
+      if (selectedItems.length === 0) return filtered;
+      return [...filtered, { date: selectedDate, items: selectedItems }];
+    });
+    toast.success(`Menu saved for ${selectedDate.toLocaleDateString()}`);
+  };
+
+  // Mutation for Single Day
+  const publishMutation = useMutation({
+    mutationFn: publishDailyMenuApi,
+    onSuccess: () => {
+      setIsPublished(true);
+      queryClient.invalidateQueries({ queryKey: ["todaysMenu"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-recent-menus"] });
+      toast.success("Today's menu published!");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const publishMenu = () => {
+    publishMutation.mutate(selectedItems);
+  };
+
+  // Mutation for Multiple Days
+  const publishMultipleMutation = useMutation({
+    mutationFn: publishMultipleMenusApi,
+    onSuccess: () => {
+      setIsPublished(true);
+      setStoredMenus([]);
+      queryClient.invalidateQueries({ queryKey: ["admin-recent-menus"] });
+      toast.success("All scheduled menus published!");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const publishMultipleMenus = () => {
+    if (storedMenus.length === 0) return;
+
+    // ✅ FIX: Use getAsUTCString to prevent timezone rollback
+    const payload: PublishPayload[] = storedMenus.map((menu) => ({
+      date: getAsUTCString(menu.date),
+      items: menu.items,
+    }));
+
+    publishMultipleMutation.mutate(payload);
+  };
 
   return {
-    // state
     selectedItems,
+    setSelectedItems,
     isPublished,
     showPreview,
     menuMode,
@@ -210,19 +298,15 @@ export default function useMenuPublish() {
     currentMonth,
     availableMenuItems,
     storedMenus,
-    // setters
     setMenuMode,
     setShowPreview,
     setSelectedDate,
     setCurrentMonth,
-    setSelectedItems,
-    // handlers
     toggleItem,
     handleDateClick,
     saveScheduledMenuToState,
     publishMenu,
     publishMultipleMenus,
-    // helpers
     getDaysInMonth,
     getFirstDayOfMonth,
     hasMenuOnDate,
@@ -232,5 +316,7 @@ export default function useMenuPublish() {
     publishedItems,
     monthNames,
     dayNames,
-  }
+    previousMenus,
+    loadMenu,
+  };
 }
