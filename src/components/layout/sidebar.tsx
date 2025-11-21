@@ -36,10 +36,7 @@ const NavItem = ({ link, isOpen }: { link: NavLink; isOpen: boolean }) => {
   );
 };
 
-export const Sidebar = () => { // ❌ No props needed
-  // ✅ FIX: Use the hook directly inside the component
-  // We pass `null` as the initial value, which is fine because the server-rendered
-  // value will be replaced by the live client-side value from the hook.
+export const Sidebar = () => {
   const { session } = useSession(null);
 
   const isOpen = useSelector((state: RootState) => state.sidebar.isOpen);

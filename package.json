@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@apollo/client": "^4.0.9",
+    "@aws-sdk/client-s3": "^3.937.0",
+    "@aws-sdk/s3-request-presigner": "^3.937.0",
     "@hookform/resolvers": "^3.10.0",
     "@paralleldrive/cuid2": "^3.0.4",
     "@prisma/client": "^6.19.0",
@@ -98,6 +100,16 @@
   "pnpm": {
     "overrides": {
       "keyv": "4.5.4"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "bcrypt",
+      "core-js",
+      "esbuild",
+      "prisma",
+      "sharp",
+      "unrs-resolver"
+    ]
   }
 }
