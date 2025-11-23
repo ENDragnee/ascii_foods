@@ -1,14 +1,17 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { MenuItem } from "@/types";
+import { OrderType } from "@/generated/prisma/enums";
 
 interface CartState {
   items: { [id: string]: number }; // An object mapping item ID to quantity
   isVisible: boolean;
+  orderType: OrderType;
 }
 
 const initialState: CartState = {
   items: {},
   isVisible: false,
+  orderType: OrderType.ONSITE,
 };
 
 const cartSlice = createSlice({
@@ -41,11 +44,21 @@ const cartSlice = createSlice({
     hideCart: (state) => {
       state.isVisible = false;
     },
+
+    changeOrderType: (state, action: PayloadAction<OrderType>) => {
+      state.orderType = action.payload;
+    },
   },
 });
 
-export const { addItem, removeItem, clearCart, showCart, hideCart } =
-  cartSlice.actions;
+export const {
+  addItem,
+  removeItem,
+  clearCart,
+  showCart,
+  hideCart,
+  changeOrderType,
+} = cartSlice.actions;
 
 // ✅ FIX: This selector now correctly accesses `state.cart.items`.
 // It correctly calculates the number of unique items in the cart.

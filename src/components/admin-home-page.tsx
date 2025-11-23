@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingUp, Clock, CheckCircle, Zap, Loader2, AlertCircle, Trophy, Utensils, Image as ImageIcon } from "lucide-react";
+import { TrendingUp, Clock, CheckCircle, Zap, Loader2, AlertCircle, Trophy, Utensils, Image as ImageIcon, Handbag, Home, X } from "lucide-react";
 import { useAdminDashboardStats, useTopSellingItems, useTodaysMenu } from "@/hooks/use-admin";
 import type { LucideIcon } from "lucide-react";
 import Image from "next/image";
@@ -153,6 +153,27 @@ export default function AdminPage() {
             subtitle="Waiting for customers"
             icon={CheckCircle}
             colorClass={{ bg: 'bg-green-500/10', text: 'text-green-500' }}
+          />
+          <StatCard
+            title="Delivered"
+            value={stats.deliveredCount}
+            subtitle="Foods taken by customers"
+            icon={Handbag}
+            colorClass={{ bg: 'bg-blue-500/10', text: 'text-blue-500' }}
+          />
+          <StatCard
+            title="Rejected"
+            value={stats.rejectedCount}
+            subtitle="Rejected orders by cashier"
+            icon={X}
+            colorClass={{ bg: 'bg-red-500/10', text: 'text-red-500' }}
+          />
+          <StatCard
+            title="Returned"
+            value={stats.returnedCount}
+            subtitle="Foods returned by customers"
+            icon={Home}
+            colorClass={{ bg: 'bg-muted-500/10', text: 'text-muted-500' }}
           />
           <StatCard
             title="Avg. Completion"

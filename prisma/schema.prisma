@@ -138,6 +138,7 @@ model Orders {
   batchId       String
   bonoNumber    Int?
   orderStatus   OrderStatus   @default(PENDING)
+  OrderType     OrderType     @default(ONSITE)
   totalPrice    Float
   paymentStatus PaymentStatus @default(NOTPAID)
   createdAt     DateTime      @default(now())
@@ -178,6 +179,11 @@ enum OrderStatus {
   COMPLETED
   DEILVERED
   RETURNED
+}
+
+enum OrderType {
+  TAKEOUT
+  ONSITE
 }
 
 enum PaymentStatus {

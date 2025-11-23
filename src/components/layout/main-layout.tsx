@@ -13,6 +13,7 @@ import { Session, CartItem, MenuItem } from '@/types';
 import { RootState } from '@/store';
 import { hideCart, clearCart } from '@/store/slices/cartSlice';
 import { useSession } from '@/hooks/use-session';
+import { OrderType } from '@/generated/prisma/enums';
 
 // API functions moved here as MainLayout now handles checkout
 async function createOrder(items: CartItem[]) {

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { CartItem } from "@/types";
 import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { OrderType } from "@/generated/prisma/enums";
 
 interface CartPreviewProps {
   items: CartItem[];

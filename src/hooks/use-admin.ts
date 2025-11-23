@@ -24,6 +24,9 @@ interface AdminDashboardStatsData {
   newOrdersCount: number;
   preparingCount: number;
   readyCount: number;
+  deliveredCount: number;
+  rejectedCount: number;
+  returnedCount: number;
   totalOrdersCompletedToday: number;
   completionRate: number;
   averageCompletionTime: number;
@@ -91,6 +94,9 @@ const GET_ADMIN_DASHBOARD_STATS_QUERY = `
       newOrdersCount
       preparingCount
       readyCount
+      deliveredCount
+      rejectedCount
+      returnedCount
       totalOrdersCompletedToday
       completionRate
       averageCompletionTime 

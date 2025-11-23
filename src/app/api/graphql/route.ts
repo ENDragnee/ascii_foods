@@ -103,6 +103,9 @@ const typeDefs = `
     newOrdersCount: Int!
     preparingCount: Int!
     readyCount: Int!
+    deliveredCount: Int!
+    rejectedCount: Int!
+    returnedCount: Int!
     totalOrdersCompletedToday: Int!
     completionRate: Float!
     averageCompletionTime: Float!
@@ -148,10 +151,22 @@ const resolvers = {
         by: ["batchId"],
         where: { orderStatus: "COMPLETED" },
       });
+      const deliveredBatches = await context.prisma.orders.groupBy({
+        by: ["batchId"],
+        where: { orderStatus: "DEILVERED" },
+      });
+      const rejectedBatches = await context.prisma.orders.groupBy({
+        by: ["batchId"],
+        where: { orderStatus: "REJECTED" },
+      });
+      const returnedBatches = await context.prisma.orders.groupBy({
+        by: ["batchId"],
+        where: { orderStatus: "RETURNED" },
+      });
 
       const totalOrdersCompletedToday = await context.prisma.orders.count({
         where: {
-          orderStatus: "COMPLETED",
+          orderStatus: { in: ["COMPLETED", "DEILVERED"] },
           updatedAt: { gte: today, lt: tomorrow },
         },
       });
@@ -166,7 +181,7 @@ const resolvers = {
 
       let averageCompletionTime = 0;
       const lastCompletedBatches = await context.prisma.orders.findMany({
-        where: { orderStatus: "COMPLETED" },
+        where: { orderStatus: { in: ["COMPLETED", "DEILVERED"] } },
         distinct: ["batchId"],
         orderBy: { updatedAt: "desc" },
         take: 20,
@@ -203,6 +218,9 @@ const resolvers = {
         newOrdersCount: pendingBatches.length,
         preparingCount: preparingBatches.length,
         readyCount: readyBatches.length,
+        deliveredCount: deliveredBatches.length,
+        rejectedCount: rejectedBatches.length,
+        returnedCount: returnedBatches.length,
         totalOrdersCompletedToday,
         completionRate: parseFloat(completionRate.toFixed(1)),
         averageCompletionTime: parseFloat(averageCompletionTime.toFixed(1)),
@@ -396,7 +414,7 @@ const resolvers = {
       const sales = await context.prisma.orders.groupBy({
         by: ["foodId"],
         where: {
-          orderStatus: "COMPLETED",
+          orderStatus: { in: ["COMPLETED", "DEILVERED"] },
         },
         _sum: {
           quantity: true,
