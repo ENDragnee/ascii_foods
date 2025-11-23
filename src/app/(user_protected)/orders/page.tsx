@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
 // ✅ Import from the safe types file to prevent build errors
-import { type Foods, type OrderStatus, Role } from "@/types";
+import { type Foods, type OrderStatus, Role, OrderType } from "@/types";
 import { Loader2, AlertCircle, Search } from "lucide-react";
 import type Ably from 'ably';
 
@@ -21,6 +21,7 @@ type FullOrderItem = {
   quantity: number;
   totalPrice: number;
   orderStatus: OrderStatus;
+  orderType: OrderType;
   createdAt: string;
   bonoNumber: number | null;
   food: Foods;
@@ -77,7 +78,6 @@ const StatusBadge = ({ status }: { status: OrderStatus }) => {
     }
   }, [status]);
 
-  // Correctly display "DELIVERED" in the UI despite the schema typo
   const displayName = status === 'DEILVERED' ? 'DELIVERED' : status;
   return <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles}`}>{displayName}</span>;
 };
@@ -110,7 +110,6 @@ export default function OrdersPage() {
     }
   });
 
-
   // --- Effects ---
   useEffect(() => {
     if ("Notification" in window && Notification.permission === "default") {
@@ -122,13 +121,28 @@ export default function OrdersPage() {
     if (!ably || !session?.user?.id) return;
     const channelName = `user:${session.user.id}`;
     const channel = ably.channels.get(channelName);
+
     const handleNotification = (message: Ably.Message) => {
       const payload: NotificationPayload = message.data;
+
+      // ✅ Logic to handle different notification types could go here if needed.
+      // Currently, the backend sends the title and body directly.
+      console.log(`Received notification for user ${session.user.id}:`, payload);
+
       setToast({ ...payload, show: true });
       setTimeout(() => setToast(prev => ({ ...prev, show: false })), 5000);
-      if (Notification.permission === "granted") new Notification(payload.title, { body: payload.body, icon: '/favicon.ico' });
+
+      if (Notification.permission === "granted") {
+        new Notification(payload.title, {
+          body: payload.body,
+          icon: '/favicon.ico'
+        });
+      }
+
+      // Invalidate queries to refresh the list and show the new status (e.g., REJECTED)
       queryClient.invalidateQueries({ queryKey: ['orders'] });
     };
+
     channel.subscribe('notification', handleNotification);
     return () => channel.unsubscribe('notification', handleNotification);
   }, [ably, session, queryClient]);
@@ -211,8 +225,10 @@ export default function OrdersPage() {
                         {order.quantity} x {order.food.price.toFixed(2)} ETB = <span className="font-semibold text-foreground">{order.totalPrice.toFixed(2)} ETB</span>
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {/* ✅ Fixed typo here: toLocaleDateDateString -> toLocaleDateString */}
                         {new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Order type: {(order.orderType)}
                       </p>
                     </div>
                     <div className="text-right">

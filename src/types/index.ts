@@ -21,11 +21,18 @@ export const OrderStatus = {
   RETURNED: "RETURNED",
 } as const;
 
+export const OrderType = {
+  TAKEOUT: "TAKEOUT",
+  ONSITE: "ONSITE",
+} as const;
+
 export type Role = (typeof Role)[keyof typeof Role];
 
 export type FoodCategory = (typeof FoodCategory)[keyof typeof FoodCategory];
 
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
+
+export type OrderType = (typeof OrderType)[keyof typeof OrderType];
 
 export interface MenuItem {
   id: string;

@@ -122,6 +122,9 @@ export default function OrderCard({ order, accentColor, onUpdateStatus, isNew }:
           <span className="font-bold text-foreground">{order.userName}</span>
           <span className="text-xs font-medium text-muted-foreground">{timeAgo}</span>
         </div>
+        <div className="flex flex-col">
+          <span className="font-bold text-muted-foreground">{order.type}</span>
+        </div>
         {(order.status === 'preparing' || order.status === 'ready') && order.bonoNumber && (
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Bono</p>

@@ -16,11 +16,11 @@ import { useSession } from '@/hooks/use-session';
 import { OrderType } from '@/generated/prisma/enums';
 
 // API functions moved here as MainLayout now handles checkout
-async function createOrder(items: CartItem[]) {
+async function createOrder(items: CartItem[], orderType: OrderType) {
   const response = await fetch("/api/orders", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ items }),
+    body: JSON.stringify({ items, orderType }),
   });
   if (!response.ok) throw new Error("Failed to place order.");
   return response.json();
@@ -48,7 +48,7 @@ export default function MainLayout({ children, session: initialSession }: MainLa
   const { session } = useSession(initialSession);
 
   // Get cart state from Redux
-  const { isVisible: isCartVisible, items: cartItemsMap } = useSelector((state: RootState) => state.cart);
+  const { isVisible: isCartVisible, items: cartItemsMap, orderType } = useSelector((state: RootState) => state.cart);
   // ✅ FIX: The isAuthenticated flag now correctly uses the live session data.
   const isAuthenticated = !!session?.user;
 
@@ -56,7 +56,7 @@ export default function MainLayout({ children, session: initialSession }: MainLa
   const { data: menuItems = [] } = useQuery<MenuItem[]>({ queryKey: ["menus"], queryFn: fetchMenus });
 
   const placeOrderMutation = useMutation({
-    mutationFn: createOrder,
+    mutationFn: (items: CartItem[]) => createOrder(items, orderType),
     onSuccess: () => {
       dispatch(clearCart());
       queryClient.invalidateQueries({ queryKey: ['orders'] });

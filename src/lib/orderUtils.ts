@@ -1,5 +1,6 @@
 // /lib/orderUtils.ts
 import { Foods, Orders, User } from "@/generated/prisma/client"; // Use your updated import path
+import { OrderType } from "@/types";
 
 // This is the shape of a single order item in our UI
 export interface OrderItem {
@@ -13,6 +14,7 @@ export interface OrderItem {
 export interface Order {
   id: string; // The batchId
   status: "new" | "preparing" | "ready";
+  type: OrderType;
   items: OrderItem[];
   totalPrice: number;
   createdAt: Date; // This type is a promise we must fulfill
@@ -47,6 +49,7 @@ export const groupOrders = (dbOrders: DbOrderFromApi[]): Order[] => {
               ? "preparing"
               : "ready",
         bonoNumber: order.bonoNumber,
+        type: order.orderType,
         // ✅ FIX: Convert the createdAt string back into a Date object.
         createdAt: new Date(order.createdAt),
         userName: order.user.name,

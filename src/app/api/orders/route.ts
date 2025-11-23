@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 // ✅ FIX: Import the 'Prisma' namespace from your generated client.
-import { Prisma } from "@/generated/prisma/client";
+import { OrderType, Prisma } from "@/generated/prisma/client";
 import { CartItem } from "@/types";
 import Ably from "ably";
 import { createId as cuid } from "@paralleldrive/cuid2";
@@ -64,9 +64,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const { items } = (await request.json()) as { items: CartItem[] };
+    const { items, orderType } = (await request.json()) as {
+      items: CartItem[];
+      orderType: OrderType;
+    };
     if (!items || items.length === 0)
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+    // Basic validation for orderType
+    if (!orderType || !Object.values(OrderType).includes(orderType)) {
+      return NextResponse.json(
+        { error: "Invalid order type" },
+        { status: 400 },
+      );
+    }
 
     const foodIds = items.map((item) => item.id);
     const foodsFromDb = await prisma.foods.findMany({
@@ -85,6 +95,7 @@ export async function POST(request: NextRequest) {
         quantity: item.quantity,
         totalPrice: price * item.quantity,
         batchId,
+        orderType,
       };
     });
 

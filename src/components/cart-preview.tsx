@@ -2,9 +2,12 @@
 
 import Image from "next/image";
 import { CartItem } from "@/types";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, Utensils, ShoppingBag } from "lucide-react"; // Added icons
 import { Button } from "@/components/ui/button";
-import { OrderType } from "@/generated/prisma/enums";
+// ✅ Import Redux hooks and actions
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store";
+import { setOrderType } from "@/store/slices/cartSlice";
 
 interface CartPreviewProps {
   items: CartItem[];
@@ -25,17 +28,18 @@ export default function CartPreview({
   onCheckout,
   onClose
 }: CartPreviewProps) {
+  const dispatch = useDispatch();
+  // ✅ Read current order type from Redux
+  const currentOrderType = useSelector((state: RootState) => state.cart.orderType);
 
   return (
-    // ✅ LAYOUT: Full-screen overlay for the modal. `items-end` pushes the sheet to the bottom.
     <div
       className="fixed inset-0 z-50 flex items-end bg-black/60 backdrop-blur-sm"
       onClick={onClose}
     >
-      {/* ✅ LAYOUT: The main "bottom sheet" container. */}
       <div
         className="relative flex h-full w-full max-w-2xl flex-col rounded-t-lg border-t border-border bg-card shadow-lg animate-in slide-in-from-bottom-full duration-300 md:mx-auto md:h-auto md:max-h-[80vh]"
-        onClick={(e) => e.stopPropagation()} // Prevents closing when clicking inside the sheet
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <header className="flex flex-shrink-0 items-center justify-between border-b border-border p-4">
@@ -45,8 +49,36 @@ export default function CartPreview({
           </Button>
         </header>
 
-        {/* ✅ LAYOUT: This is the scrollable content area. */}
+        {/* Scrollable Content */}
         <div className="flex-grow overflow-y-auto p-4 min-h-0">
+
+          {/* ✅ NEW: Order Type Selection */}
+          <div className="mb-6">
+            <label className="mb-2 block text-sm font-medium text-muted-foreground">Order Type</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => dispatch(setOrderType("ONSITE"))}
+                className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-sm font-semibold transition-all ${currentOrderType === "ONSITE"
+                  ? "border-primary bg-primary/10 text-primary ring-1 ring-primary"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted"
+                  }`}
+              >
+                <Utensils className="h-4 w-4" />
+                Dine In
+              </button>
+              <button
+                onClick={() => dispatch(setOrderType("TAKEOUT"))}
+                className={`flex items-center justify-center gap-2 rounded-lg border p-3 text-sm font-semibold transition-all ${currentOrderType === "TAKEOUT"
+                  ? "border-primary bg-primary/10 text-primary ring-1 ring-primary"
+                  : "border-border bg-card text-muted-foreground hover:bg-muted"
+                  }`}
+              >
+                <ShoppingBag className="h-4 w-4" />
+                Take Out
+              </button>
+            </div>
+          </div>
+
           <div className="space-y-3">
             {items.map((item) => (
               <div key={item.id} className="flex items-center justify-between rounded-md bg-muted/50 p-2">
@@ -73,7 +105,7 @@ export default function CartPreview({
           </div>
         </div>
 
-        {/* ✅ LAYOUT: The footer is fixed at the bottom of the sheet. */}
+        {/* Footer */}
         <footer className="flex flex-shrink-0 flex-col gap-3 border-t border-border bg-card p-4">
           <div className="flex items-center justify-between rounded-lg bg-muted p-4">
             <p className="text-lg font-bold text-foreground">Total:</p>

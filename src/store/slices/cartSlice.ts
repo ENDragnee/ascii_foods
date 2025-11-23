@@ -11,7 +11,7 @@ interface CartState {
 const initialState: CartState = {
   items: {},
   isVisible: false,
-  orderType: OrderType.ONSITE,
+  orderType: "ONSITE",
 };
 
 const cartSlice = createSlice({
@@ -45,7 +45,7 @@ const cartSlice = createSlice({
       state.isVisible = false;
     },
 
-    changeOrderType: (state, action: PayloadAction<OrderType>) => {
+    setOrderType: (state, action: PayloadAction<OrderType>) => {
       state.orderType = action.payload;
     },
   },
@@ -57,7 +57,7 @@ export const {
   clearCart,
   showCart,
   hideCart,
-  changeOrderType,
+  setOrderType,
 } = cartSlice.actions;
 
 // ✅ FIX: This selector now correctly accesses `state.cart.items`.

@@ -138,7 +138,7 @@ model Orders {
   batchId       String
   bonoNumber    Int?
   orderStatus   OrderStatus   @default(PENDING)
-  OrderType     OrderType     @default(ONSITE)
+  orderType     OrderType     @default(ONSITE)
   totalPrice    Float
   paymentStatus PaymentStatus @default(NOTPAID)
   createdAt     DateTime      @default(now())
