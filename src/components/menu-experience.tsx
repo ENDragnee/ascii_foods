@@ -27,7 +27,6 @@ const CATEGORIES = [
   { key: "JUICE", label: "Juice", emoji: "🍹" },
 ];
 
-// Define the structure for a single daily menu item from the API
 interface DailyMenu {
   id: string;
   date: string;
@@ -36,12 +35,12 @@ interface DailyMenu {
   }[];
 }
 
-// Fetches the daily menus from the new API endpoint
+// --- API Fetcher Functions ---
 async function fetchDailyMenus(): Promise<DailyMenu[]> {
   const response = await fetch("/api/menus/latest-menu");
   if (!response.ok) throw new Error("Network response was not ok");
   const data = await response.json();
-  return data.menus || []; // Ensure we always have an array
+  return data.menus || [];
 }
 
 async function fetchFavorites(): Promise<string[] | null> {
@@ -61,7 +60,6 @@ async function toggleFavorite(foodId: string) {
   return response.json();
 }
 
-// Helper function to format date strings for display
 const formatDateForDisplay = (dateString: string) => {
   const date = new Date(dateString);
   const today = new Date();
@@ -93,13 +91,12 @@ export default function MenuExperience() {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
-  // --- Fetch daily menus ---
+  // --- Data Fetching ---
   const { data: dailyMenus = [], isLoading: isMenuLoading, isError: isMenuError } = useQuery<DailyMenu[]>({
     queryKey: ["dailyMenus"],
     queryFn: fetchDailyMenus,
   });
 
-  // --- Fetch favorites (reactive to session) ---
   const { data: favoriteIds, isLoading: isFavoritesLoading } = useQuery<string[] | null>({
     queryKey: ["favorites"],
     queryFn: fetchFavorites,
@@ -108,7 +105,7 @@ export default function MenuExperience() {
 
   const favoritesSet = useMemo(() => new Set(favoriteIds || []), [favoriteIds]);
 
-  // --- Mutation for toggling favorites ---
+  // --- Mutation ---
   const toggleFavoriteMutation = useMutation({
     mutationFn: toggleFavorite,
     onMutate: async (foodId: string) => {
@@ -119,17 +116,15 @@ export default function MenuExperience() {
       queryClient.setQueryData(["favorites"], newFavorites);
       return { previousFavorites };
     },
-    onError: (_err, _foodId, context) => { // Fixed: Unused `err` variable
+    onError: (_err, _foodId, context) => {
       if (context?.previousFavorites !== undefined) queryClient.setQueryData(["favorites"], context.previousFavorites);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["favorites"] }),
   });
 
-  // --- Derived state for the currently active menu ---
-  // This removes the need for a useEffect to reset state, resolving the cascading render error.
+  // --- Derived State ---
   const activeMenu = useMemo(() => {
     if (!dailyMenus || dailyMenus.length === 0) return null;
-    // Find the menu matching the selected date, or default to the first one.
     const foundMenu = dailyMenus.find(menu => menu.date === selectedDate);
     return foundMenu || dailyMenus[0];
   }, [dailyMenus, selectedDate]);
@@ -137,7 +132,6 @@ export default function MenuExperience() {
   const menuItems = useMemo(() => {
     return activeMenu ? activeMenu.items.map(item => item.food) : [];
   }, [activeMenu]);
-
 
   // --- Handlers ---
   const handleToggleFavorite = (foodId: string) => {
@@ -147,9 +141,9 @@ export default function MenuExperience() {
 
   const handleDateChange = (date: string) => {
     setSelectedDate(date);
-    setCurrentPage(1); // Reset pagination
-    setSearchQuery(""); // Reset search
-    setSelectedCategory("all"); // Reset category
+    setCurrentPage(1);
+    setSearchQuery("");
+    setSelectedCategory("all");
   };
 
   const handleCategorySelect = (categoryKey: string) => {
@@ -167,7 +161,7 @@ export default function MenuExperience() {
     setCurrentPage(1);
   };
 
-  // --- Filter & paginate ---
+  // --- Filter & Paginate ---
   const filteredItems = useMemo(() => {
     let items = menuItems;
     if (selectedCategory === "favorites") items = items.filter((item) => favoritesSet.has(item.id));
@@ -201,11 +195,11 @@ export default function MenuExperience() {
     <div className="flex h-full flex-col bg-background">
       <LoginPromptModal isOpen={showLoginPrompt} onClose={() => setShowLoginPrompt(false)} />
 
-      <header className="shrink-0 border-b border-border bg-card/80 backdrop-blur-sm"> {/* Fixed: `flex-shrink-0` to `shrink-0` */}
+      <header className="shrink-0 border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="flex h-16 items-center justify-between px-4">
           {isSearchVisible ? (
             <div className="flex w-full items-center gap-2">
-              <Search className="h-5 w-5 shrink-0 text-muted-foreground" /> {/* Fixed: `flex-shrink-0` to `shrink-0` */}
+              <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
               <input
                 type="text"
                 placeholder="Search for a dish..."
@@ -214,34 +208,19 @@ export default function MenuExperience() {
                 autoFocus
                 className="w-full bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setIsSearchVisible(false);
-                  setSearchQuery("");
-                }}
-              >
-                Cancel
-              </Button>
+              <Button variant="ghost" size="sm" onClick={() => { setIsSearchVisible(false); setSearchQuery(""); }}>Cancel</Button>
             </div>
           ) : (
             <>
               <h1 className="text-xl font-bold text-foreground">Menu</h1>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" onClick={() => setIsSearchVisible(true)}>
-                  <Search className="h-5 w-5" />
-                </Button>
+                <Button variant="ghost" size="icon" onClick={() => setIsSearchVisible(true)}><Search className="h-5 w-5" /></Button>
                 <Button variant="ghost" size="icon" onClick={() => dispatch(toggleViewMode())}>
                   {viewMode === "grid" ? <List className="h-5 w-5" /> : <LayoutGrid className="h-5 w-5" />}
                 </Button>
                 <Button variant="ghost" size="icon" className="relative" onClick={() => dispatch(showCart())}>
                   <ShoppingCart className="h-5 w-5" />
-                  {cartSize > 0 && (
-                    <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                      {cartSize}
-                    </span>
-                  )}
+                  {cartSize > 0 && (<span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">{cartSize}</span>)}
                 </Button>
               </div>
             </>
@@ -249,11 +228,10 @@ export default function MenuExperience() {
         </div>
       </header>
 
-      {/* Date and Category Filters */}
-      <div className="shrink-0 border-b border-border bg-card/50"> {/* Fixed: `flex-shrink-0` to `shrink-0` */}
+      <div className="shrink-0 border-b border-border bg-card/50">
         {dailyMenus.length > 1 && (
           <div className="flex items-center gap-2 overflow-x-auto p-3 no-scrollbar border-b border-border">
-            <CalendarIcon className="h-5 w-5 shrink-0 text-muted-foreground ml-1" /> {/* Fixed: `flex-shrink-0` to `shrink-0` */}
+            <CalendarIcon className="h-5 w-5 shrink-0 text-muted-foreground ml-1" />
             {dailyMenus.map((menu) => (
               <button
                 key={menu.id}
@@ -280,7 +258,8 @@ export default function MenuExperience() {
         </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto p-4">
+      {/* ✅ FIX: Added pb-20 to ensure bottom bar doesn't cover content */}
+      <main className="flex-1 overflow-y-auto p-4 pb-20">
         {dailyMenus.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <p className="mb-4 text-4xl">🗓️</p>
@@ -289,7 +268,8 @@ export default function MenuExperience() {
           </div>
         ) : paginatedItems.length > 0 ? (
           viewMode === "grid" ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            // ✅ FIX: Changed grid-cols-1 to grid-cols-2 for mobile
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {paginatedItems.map((item) => (
                 <MenuCard
                   key={item.id}
@@ -329,7 +309,7 @@ export default function MenuExperience() {
       </main>
 
       {totalPages > 1 && (
-        <footer className="shrink-0 border-t border-border bg-card"> {/* Fixed: `flex-shrink-0` to `shrink-0` */}
+        <footer className="shrink-0 border-t border-border bg-card">
           <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         </footer>
       )}

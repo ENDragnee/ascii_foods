@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useRef } from 'react'; // ✅ Added useState, useRef
 import { usePathname } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -43,16 +43,17 @@ export default function MainLayout({ children, session: initialSession }: MainLa
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  // ✅ FIX: Use the hook to get the LIVE session state.
-  // The initialSession prop is passed to prevent a flicker on the first load.
+  // ✅ NEW: State to manage BottomBar visibility
+  const [isBottomBarVisible, setIsBottomBarVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
   const { session } = useSession(initialSession);
 
   // Get cart state from Redux
   const { isVisible: isCartVisible, items: cartItemsMap, orderType } = useSelector((state: RootState) => state.cart);
-  // ✅ FIX: The isAuthenticated flag now correctly uses the live session data.
   const isAuthenticated = !!session?.user;
 
-  // --- Data Fetching & Mutations (Now in the Layout) ---
+  // --- Data Fetching & Mutations ---
   const { data: menuItems = [] } = useQuery<MenuItem[]>({ queryKey: ["menus"], queryFn: fetchMenus });
 
   const placeOrderMutation = useMutation({
@@ -68,12 +69,12 @@ export default function MainLayout({ children, session: initialSession }: MainLa
     },
   });
 
-  // --- Helper Functions to build the cart items array ---
+  // --- Helper Functions ---
   const getCartItems = (): CartItem[] => {
     return Object.entries(cartItemsMap).map(([id, quantity]) => {
       const menuItem = menuItems.find(item => item.id === id);
       return { ...menuItem!, quantity };
-    }).filter(item => item.name); // Filter out any potential mismatches
+    }).filter(item => item.name);
   };
 
   const cartItemsArray = getCartItems();
@@ -87,6 +88,32 @@ export default function MainLayout({ children, session: initialSession }: MainLa
 
   const routeToSignIn = () => router.push('/auth?view=signin');
 
+  // ✅ NEW: Scroll Handler Logic
+  const handleScroll = (e: React.UIEvent<HTMLElement>) => {
+    const currentScrollY = e.currentTarget.scrollTop;
+
+    // Always show if near the top to prevent getting stuck
+    if (currentScrollY < 50) {
+      setIsBottomBarVisible(true);
+      lastScrollY.current = currentScrollY;
+      return;
+    }
+
+    // Sensitivity threshold to prevent flickering on tiny scrolls
+    const threshold = 10;
+
+    if (Math.abs(currentScrollY - lastScrollY.current) > threshold) {
+      if (currentScrollY > lastScrollY.current) {
+        // Scrolling DOWN -> Hide
+        setIsBottomBarVisible(false);
+      } else {
+        // Scrolling UP -> Show
+        setIsBottomBarVisible(true);
+      }
+      lastScrollY.current = currentScrollY;
+    }
+  };
+
   // --- Conditional Rendering Logic ---
   const isHomePage = pathname === '/';
   const isAuthPage = pathname === '/auth';
@@ -96,14 +123,21 @@ export default function MainLayout({ children, session: initialSession }: MainLa
   }
 
   return (
-    <div className="flex h-screen w-full bg-background">
+    <div className="flex h-screen w-full bg-background overflow-hidden">
       <Sidebar />
-
-      <main className="flex-1 flex flex-col min-w-0 md:pb-0 pb-20">
+      <main
+        className="flex-1 flex flex-col min-w-0 md:pb-0 pb-20 overflow-y-auto scroll-smooth"
+        onScroll={handleScroll}
+      >
         {children}
       </main>
 
-      <BottomBar session={session} />
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-40 md:hidden transition-transform duration-300 ease-in-out ${isBottomBarVisible ? 'translate-y-0' : 'translate-y-full'
+          }`}
+      >
+        <BottomBar session={session} />
+      </div>
 
       {isCartVisible && cartItemsArray.length > 0 && (
         <CartPreview

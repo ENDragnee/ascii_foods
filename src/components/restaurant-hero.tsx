@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 
 // An array of dishes to be displayed in the hero section.
 const DISHES = ["እንቁላል ፍርፍር", "ፓስታ በአትክልት", "ሩዝ በአትክልት", "ሶያ", "ተጋቢኖ", "የቤቱ ስፔሻል", "ጨጨብሳ", "ስፔሻል ሳንዱች"]
@@ -10,7 +11,6 @@ export default function RestaurantHero({ onEnter }: { onEnter: () => void }) {
   const [dishIndex, setDishIndex] = useState(0)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // This useEffect handles the typing animation logic. No changes needed here.
   useEffect(() => {
     const currentDish = DISHES[dishIndex]
     const typingSpeed = isDeleting ? 50 : 100
@@ -32,34 +32,30 @@ export default function RestaurantHero({ onEnter }: { onEnter: () => void }) {
   }, [displayText, dishIndex, isDeleting])
 
   return (
-    // ✅ STYLE: The main container now uses the theme's background color.
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background p-4 sm:p-6 md:p-8">
-      {/* Optional: A subtle background pattern */}
+      {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-[url('/path-to-your-subtle-food-texture.svg')] opacity-5" />
 
-      {/* ✅ STYLE: Decorative blobs now use the primary and secondary theme colors. */}
+      {/* Decorative blobs */}
       <div
         className="absolute top-10 left-10 h-32 w-32 rounded-full opacity-30 transition-transform duration-500 hover:scale-110"
         style={{ background: "radial-gradient(circle, var(--color-secondary) 0%, transparent 70%)" }}
       />
       <div
-        className="absolute bottom-10 right-10 h-40 w-40 rounded-full opacity-40 transition-transform duration-500 hover:scale-110"
+        className="absolute bottom-20 right-10 h-40 w-40 rounded-full opacity-40 transition-transform duration-500 hover:scale-110"
         style={{ background: "radial-gradient(circle, var(--color-primary) 0%, transparent 70%)" }}
       />
 
       {/* Main Content */}
-      <div className="relative z-10 max-w-3xl text-center">
-        {/* ✅ STYLE: The main heading now uses the primary theme color. */}
+      <div className="relative z-10 flex flex-grow flex-col items-center justify-center text-center max-w-3xl">
         <h1 className="mb-4 text-6xl font-extrabold tracking-tighter text-primary md:text-8xl">
           KK yellow
         </h1>
 
-        {/* ✅ STYLE: The tagline uses the muted foreground for a softer appearance. */}
         <p className="mb-8 text-lg leading-relaxed text-muted-foreground md:text-xl">
           ትኩስ እጅ የሚያሰቆረጥም ጣእም!!!
         </p>
 
-        {/* ✅ STYLE: The typing text area is cleaner and uses the main foreground color for high contrast. */}
         <div className="mb-12 flex h-20 items-center justify-center md:h-24">
           <p className="min-h-[3rem] text-3xl font-light text-foreground md:text-5xl">
             {displayText}
@@ -67,7 +63,6 @@ export default function RestaurantHero({ onEnter }: { onEnter: () => void }) {
           </p>
         </div>
 
-        {/* ✅ STYLE: The main call-to-action button is now fully themed. */}
         <button
           onClick={onEnter}
           className="rounded-full bg-primary px-10 py-4 text-lg font-bold text-primary-foreground shadow-lg shadow-primary/40 transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-primary/50"
@@ -75,7 +70,6 @@ export default function RestaurantHero({ onEnter }: { onEnter: () => void }) {
           ጀምር (Get Started)
         </button>
 
-        {/* ✅ STYLE: The bouncing emojis now use the secondary color for their background. */}
         <div className="mt-16 flex justify-center gap-4">
           {["🌶️", "🍚", "🥘"].map((emoji, idx) => (
             <div
@@ -88,6 +82,19 @@ export default function RestaurantHero({ onEnter }: { onEnter: () => void }) {
           ))}
         </div>
       </div>
+
+      {/* ✅ FOOTER: Added credit section at the absolute bottom */}
+      <footer className="relative z-10 mt-auto w-full text-center">
+        <p className="text-sm text-muted-foreground">
+          Powered by{" "}
+          <Link
+            href="/about"
+            className="font-semibold text-foreground transition-colors hover:text-primary hover:underline underline-offset-4"
+          >
+            ASCII Technologies PLC
+          </Link>
+        </p>
+      </footer>
     </div>
   )
 }
