@@ -1,10 +1,42 @@
 // /lib/prisma.ts
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaClient } from "@/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-export const prisma = new PrismaClient({
-  adapter,
-});
+const connectionString = process.env.DATABASE_URL;
+
+const prismaClientSingleton = () => {
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is missing from environment variables");
+  }
+
+  if (connectionString.startsWith("prisma://")) {
+    throw new Error(
+      "You are using a 'prisma://' URL with the 'pg' adapter. Please use the Direct Connection URL (starts with 'postgres://') or remove the adapter.",
+    );
+  }
+
+  const pool = new Pool({
+    connectionString,
+    ssl:
+      process.env.NODE_ENV === "production"
+        ? { rejectUnauthorized: false }
+        : undefined,
+  });
+
+  const adapter = new PrismaPg(pool);
+
+  return new PrismaClient({
+    adapter,
+  });
+};
+
+declare global {
+  var prismaGlobal: undefined | ReturnType<typeof prismaClientSingleton>;
+}
+
+export const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
+
+if (process.env.NODE_ENV !== "production") {
+  globalThis.prismaGlobal = prisma;
+}
