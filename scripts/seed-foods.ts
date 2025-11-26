@@ -1,7 +1,6 @@
 import "dotenv/config"; // Add this line
-import { PrismaClient, FoodCategory } from "../src/generated/prisma/client";
-
-const prisma = new PrismaClient();
+import { FoodCategory } from "../src/generated/prisma/client";
+import { prisma } from "../src/lib/prisma";
 
 const foodData = [
   // --- Breakfast Items (Mapped to NORMAL category) ---

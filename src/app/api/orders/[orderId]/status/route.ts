@@ -1,10 +1,9 @@
 // app/api/orders/[orderId]/status/route.ts
 
 import { NextResponse } from "next/server";
-import { PrismaClient, OrderStatus } from "@/generated/prisma/client";
+import { OrderStatus } from "@/generated/prisma/client";
 import { requireAuth } from "@/lib/serverAuth"; // Assuming you have a session utility
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // Helper to check if a string is a valid OrderStatus
 function isValidOrderStatus(status: OrderStatus): status is OrderStatus {
